@@ -1,0 +1,31 @@
+import { AbstractEntity } from './abstract.entity';
+export declare class OvertimeDetailEntity extends AbstractEntity {
+    id: number;
+    companyId: number;
+    overtimeHdrId: number;
+    employeeId: number;
+    date: Date;
+    otRate: number;
+    otRateHour: number;
+    otTaxable: number;
+    overtimeHours: number;
+    overtimeTypeId: number;
+    nonTaxableAmount: number;
+    taxableAmount: number;
+    statusId: number;
+    nextLevelApproval: number;
+    approvedBy: number;
+    approvedOn: Date;
+    payrollTrxHeaderId: number;
+    payrollNo: number;
+    payrollYear: number;
+    payrollMonth: number;
+    pevTaxableId: number;
+    pevNonTaxableId: number;
+    overtimeEmployeeId: number;
+    startFrom: Date;
+    endAt: Date;
+    remark: string;
+    daysToProrate: number;
+    hourPerDay: number;
+}

@@ -1,0 +1,1 @@
+{"version":3,"file":"aws-s3.provider.js","sourceRoot":"","sources":["../../../../src/libs/aws/aws-s3/aws-s3.provider.ts"],"names":[],"mappings":";;AAIA,kDAEC;AAND,yFAA6E;AAI7E,SAAgB,mBAAmB,CAAC,OAA4B;IAC9D,OAAO,CAAC,EAAE,OAAO,EAAE,gDAAkB,EAAE,QAAQ,EAAE,OAAO,IAAI,EAAE,EAAE,CAAC,CAAC;AACpE,CAAC"}

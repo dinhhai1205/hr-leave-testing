@@ -1,0 +1,1 @@
+{"version":3,"file":"docx-to-pdf.module.js","sourceRoot":"","sources":["../../../../../src/modules/e-sign/libs/docx-to-pdf/docx-to-pdf.module.ts"],"names":[],"mappings":";;;;;;;;;AAAA,2CAAwC;AACxC,+DAAyD;AAMlD,IAAM,eAAe,GAArB,MAAM,eAAe;CAAG,CAAA;AAAlB,0CAAe;0BAAf,eAAe;IAJ3B,IAAA,eAAM,EAAC;QACN,SAAS,EAAE,CAAC,sCAAgB,CAAC;QAC7B,OAAO,EAAE,CAAC,sCAAgB,CAAC;KAC5B,CAAC;GACW,eAAe,CAAG"}

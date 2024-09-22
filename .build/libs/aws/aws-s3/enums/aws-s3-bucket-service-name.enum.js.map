@@ -1,0 +1,1 @@
+{"version":3,"file":"aws-s3-bucket-service-name.enum.js","sourceRoot":"","sources":["../../../../../src/libs/aws/aws-s3/enums/aws-s3-bucket-service-name.enum.ts"],"names":[],"mappings":";;;AAAA,IAAY,uBAMX;AAND,WAAY,uBAAuB;IACjC,8CAAmB,CAAA;IACnB,8DAAmC,CAAA;IACnC,iEAAsC,CAAA;IACtC,2DAAgC,CAAA;IAChC,0CAAe,CAAA;AACjB,CAAC,EANW,uBAAuB,uCAAvB,uBAAuB,QAMlC"}

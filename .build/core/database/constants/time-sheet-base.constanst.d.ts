@@ -1,0 +1,2 @@
+export declare const ROUNDING_TIME_SHEET_BASE_CONSTANT = 0.5;
+export declare const ROUNDING_TIME_SHEET_THRESHOLD_CONSTANT = 1;

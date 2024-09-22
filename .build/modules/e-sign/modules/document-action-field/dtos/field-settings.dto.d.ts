@@ -1,0 +1,36 @@
+import { FieldCategory, FieldTypeName } from '../../../enums';
+import { DropdownValueDto } from './dropdown-value.dto';
+import { SubFieldDto } from './sub-field.dto';
+import { TextPropertyDto } from './text-property.dto';
+export declare class FieldSettingsDto {
+    fieldId: number;
+    fieldTypeId: number;
+    fieldTypeName: FieldTypeName;
+    actionId: number;
+    fieldCategory: FieldCategory;
+    fieldLabel: string;
+    pageNo: number;
+    documentFileId: number;
+    documentId: number;
+    fieldName: string;
+    xValue: number;
+    yValue: number;
+    absWidth: number;
+    absHeight: number;
+    width: number;
+    height: number;
+    xCoord: number;
+    yCoord: number;
+    defaultValue: string;
+    timeZoneOffset: number;
+    timeZone: string;
+    dateFormat: string;
+    descriptionTooltip: string;
+    isMandatory: boolean;
+    isDraggable: boolean;
+    isMovable: boolean;
+    isResizable: boolean;
+    textProperty: TextPropertyDto;
+    dropdownValues: DropdownValueDto[];
+    subFields: SubFieldDto[];
+}

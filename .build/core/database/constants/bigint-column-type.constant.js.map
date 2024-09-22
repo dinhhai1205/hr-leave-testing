@@ -1,0 +1,1 @@
+{"version":3,"file":"bigint-column-type.constant.js","sourceRoot":"","sources":["../../../../src/core/database/constants/bigint-column-type.constant.ts"],"names":[],"mappings":";;;AACA,oCAA0D;AAE7C,QAAA,kBAAkB,GAAkB;IAC/C,IAAI,EAAE,IAAA,kBAAU,EAAC,QAAQ,CAAC;IAC1B,WAAW,EAAE,IAAA,0BAAkB,GAAE;CAClC,CAAC"}

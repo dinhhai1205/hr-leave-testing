@@ -1,0 +1,30 @@
+import { EPolicyCarryForwardType, EPolicyEffectiveType, EPolicyEffectiveUOM } from '../../../../../common/enums';
+import { LeaveTypePolicyEntity } from '../../../../../core/database/entities/leave-type-policy.entity';
+import { EPolicyExpireFrom } from '../enums/policy-expire-from.enum';
+import { EPolicyExpireType } from '../enums/policy-expire-type.enum';
+import { EPolicyRenewType } from '../enums/policy-renew-type.enum';
+export declare class LeaveTypePolicyUpdateBody implements Partial<LeaveTypePolicyEntity> {
+    id: number;
+    code?: string;
+    name: string;
+    entitlement?: number;
+    effAfterUnit?: number;
+    effAfterUOM?: EPolicyEffectiveUOM;
+    effAfterType?: EPolicyEffectiveType;
+    prorateEntitlement?: boolean;
+    prorateUnit?: number;
+    creditOnDay?: number;
+    renewYearly?: boolean;
+    renewType: EPolicyRenewType;
+    renewOnDay?: number;
+    renewOnMonth?: number;
+    cfType?: EPolicyCarryForwardType;
+    cfUnit?: number;
+    cfLtId?: number;
+    expireType: EPolicyExpireType;
+    expireOnDay?: number;
+    expireOnMonth?: number;
+    expireInDays: number;
+    expireInFrom: EPolicyExpireFrom;
+    updatedBy?: string;
+}

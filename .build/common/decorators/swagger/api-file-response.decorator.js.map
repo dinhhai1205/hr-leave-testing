@@ -1,0 +1,1 @@
+{"version":3,"file":"api-file-response.decorator.js","sourceRoot":"","sources":["../../../../src/common/decorators/swagger/api-file-response.decorator.ts"],"names":[],"mappings":";;AAGA,0CAOC;AAVD,2CAAiD;AACjD,6CAA8C;AAE9C,SAAgB,eAAe;IAC7B,OAAO,IAAA,wBAAe,EACpB,IAAA,qBAAW,EAAC;QACV,MAAM,EAAE,GAAG;QACX,OAAO,EAAE,EAAE,0BAA0B,EAAE,EAAE,EAAE;KAC5C,CAAC,CACH,CAAC;AACJ,CAAC"}

@@ -1,0 +1,158 @@
+import { StreamableFile } from '@nestjs/common';
+import { PayrollTimeSheetService } from './payroll-timesheet.service';
+import { CreateMultiPayrollTimeSheetDto, CreatePayrollByPrtrxHdrDto, CreatePayrollTimeSheetDto, QueryWithPaginationDto } from './dtos';
+import { PayrollTimeSheetEntity } from '../../../../core/database/entities/payroll-timesheet.entity';
+import { IMulterFileUploaded } from '../../common/interfaces';
+import { PayCalculationMethod } from '../../../../core/database';
+import { PayrollTimeSheetServiceV2 } from './payroll-timesheet-v2.service';
+export declare class PayrollTimeSheetController {
+    private readonly payrollTimeSheetService;
+    private readonly payrollTimeSheetServiceV2;
+    constructor(payrollTimeSheetService: PayrollTimeSheetService, payrollTimeSheetServiceV2: PayrollTimeSheetServiceV2);
+    generateExampleFile(type: PayCalculationMethod, companyId: number, headerId: number): Promise<StreamableFile>;
+    exportPayrollTimesheetExcelFile(companyId: number, headerId: number, query: QueryWithPaginationDto): Promise<StreamableFile>;
+    importPayrollTimesheetExcelFile(companyId: number, headerId: number, file: IMulterFileUploaded, userEmail: string, type: PayCalculationMethod): Promise<{
+        message: string;
+    }>;
+    getPayrollsByHeaderId(companyId: number, headerId: number, query: QueryWithPaginationDto): Promise<{
+        data: {
+            id: number;
+            employeeId: number;
+            fullNameLocal: string | null;
+            fullNameEn: string | null;
+            employeeRef: string | null;
+            orgElement: string | null;
+            payrollGroup: string | null;
+            costCenter: string | null;
+            payrollHeader: number | null;
+            totalScheduledWorkDays: number | undefined;
+            totalScheduledWorkHours: number | undefined;
+            adjustmentDaysAdditionDays: number;
+            adjustmentDaysDeductionDays: number;
+            unpaidDays: number;
+            totalPayrollRegularWorkDays: number;
+            adjustments: import("../timesheet-adjustment/dtos").TimeSheetAdjustmentDto[];
+        }[];
+        page: number;
+        take: number;
+        itemCount: number;
+        pageCount: number;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+    }>;
+    getAllPayrollsInPrtrxHdr(companyId: number, headerId: number, query: QueryWithPaginationDto): Promise<{
+        data: {
+            id: number;
+            employeeId: number;
+            fullNameLocal: string | null;
+            fullNameEn: string | null;
+            employeeRef: string | null;
+            orgElement: string | null;
+            payrollGroup: string | null;
+            costCenter: string | null;
+            payrollHeader: number | null;
+            totalScheduledWorkDays: number | undefined;
+            totalScheduledWorkHours: number | undefined;
+            adjustmentDaysAdditionDays: number;
+            adjustmentDaysDeductionDays: number;
+            unpaidDays: number;
+            totalPayrollRegularWorkDays: number;
+            adjustments: import("../timesheet-adjustment/dtos").TimeSheetAdjustmentDto[];
+        }[];
+        page: number;
+        take: number;
+        itemCount: number;
+        pageCount: number;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+    }>;
+    createPayrollsForEmployeesInPrtrxHdr(companyId: number, headerId: number, updateRegularWorkDays: boolean, userEmail: string, query: CreatePayrollByPrtrxHdrDto): Promise<never[] | {
+        data: {
+            id: number;
+            employeeId: number;
+            fullNameLocal: string | null;
+            fullNameEn: string | null;
+            employeeRef: string | null;
+            orgElement: string | null;
+            payrollGroup: string | null;
+            costCenter: string | null;
+            payrollHeader: number | null;
+            totalScheduledWorkDays: number | undefined;
+            totalScheduledWorkHours: number | undefined;
+            adjustmentDaysAdditionDays: number;
+            adjustmentDaysDeductionDays: number;
+            unpaidDays: number;
+            totalPayrollRegularWorkDays: number;
+            adjustments: import("../timesheet-adjustment/dtos").TimeSheetAdjustmentDto[];
+        }[];
+        page: number;
+        take: number;
+        itemCount: number;
+        pageCount: number;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+    }>;
+    getAllPayrollsOfEmployee(companyId: number, employeeId: number, query: QueryWithPaginationDto): Promise<{
+        data: {
+            fullNameLocal: string | null;
+            fullNameEn: string | null;
+            employeeRef: string | null;
+            orgElement: string | null;
+            payrollGroup: string | null;
+            costCenter: string | null;
+            totalScheduledWorkDays: number | undefined;
+            totalScheduledWorkHours: number | undefined;
+            adjustmentDaysAdditionDays: number;
+            adjustmentDaysDeductionDays: number;
+            unpaidDays: number;
+            totalPayrollRegularWorkDays: number;
+            adjustments: import("../timesheet-adjustment/dtos").TimeSheetAdjustmentDto[];
+        }[];
+        page: number;
+        take: number;
+        itemCount: number;
+        pageCount: number;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+    }>;
+    getAllPayrollsOfCompany(companyId: number, query: QueryWithPaginationDto): Promise<{
+        data: {
+            fullNameLocal: string | null;
+            fullNameEn: string | null;
+            employeeRef: string | null;
+            orgElement: string | null;
+            payrollGroup: string | null;
+            costCenter: string | null;
+            totalScheduledWorkDays: number | undefined;
+            totalScheduledWorkHours: number | undefined;
+            adjustmentDaysAdditionDays: number;
+            adjustmentDaysDeductionDays: number;
+            unpaidDays: number;
+            totalPayrollRegularWorkDays: number;
+            adjustments: import("../timesheet-adjustment/dtos").TimeSheetAdjustmentDto[];
+        }[];
+        page: number;
+        take: number;
+        itemCount: number;
+        pageCount: number;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+    }>;
+    createMultiPayroll(companyId: number, userEmail: string, createDtos: CreateMultiPayrollTimeSheetDto): Promise<PayrollTimeSheetEntity[]>;
+    createPayroll(companyId: number, userEmail: string, createDto: CreatePayrollTimeSheetDto): Promise<PayrollTimeSheetEntity>;
+    updatePayrollsWorksheduledDays(headerId: number, companyId: number, userEmail: string): Promise<({
+        id: number | undefined;
+        totalScheduledWorkDays: number;
+        totalScheduledWorkHours: number;
+        totalPayrollRegularWorkDays: number;
+        createdBy: string | undefined;
+        createdOn: Date | undefined;
+        updatedBy: string | undefined;
+        updatedOn: Date | undefined;
+    } & PayrollTimeSheetEntity)[]>;
+    restorePayroll(payrollId: number, userEmail: string): Promise<PayrollTimeSheetEntity>;
+    updatePayroll(payrollId: number, totalScheduledWorkDays: number, totalScheduledWorkHours: number, userEmail: string): Promise<PayrollTimeSheetEntity>;
+    archiveAllPayroll(companyId: number, headerId: number, userEmail: string): Promise<import("typeorm").UpdateResult>;
+    archiveMultiPayroll(companyId: number, headerId: number, employeeIds: number[], userEmail: string): Promise<import("typeorm").UpdateResult>;
+    archivePayroll(payrollId: number, userEmail: string): Promise<PayrollTimeSheetEntity>;
+}

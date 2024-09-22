@@ -1,0 +1,32 @@
+import { EHistorySign, EHistoryType } from '../../../common/enums';
+import { AbstractEntity } from './abstract.entity';
+import { CompanyEntity } from './company.entity';
+import { EmployeeEntity } from './employee.entity';
+import { LeaveTypeBalanceEntity } from './leave-type-balance.entity';
+import { LeaveTypePolicyEntity } from './leave-type-policy.entity';
+import { LeaveTypeEntity } from './leave-type.entity';
+export declare class LeaveTrxEntity extends AbstractEntity {
+    id: number;
+    companyId: number;
+    leaveTypeId: number;
+    policyId: number;
+    employeeId: number;
+    employeeRef: string;
+    joinDate: Date;
+    effDate: Date;
+    date: Date;
+    type: EHistoryType;
+    sign: EHistorySign;
+    unit: number;
+    balance: number;
+    currentPolicySetting: string;
+    previousPolicySetting: string;
+    createdBy: string;
+    updatedBy: string;
+    company: CompanyEntity;
+    leaveType: LeaveTypeEntity;
+    leaveTypePolicy: LeaveTypePolicyEntity;
+    employee: EmployeeEntity;
+    leaveTypeBalance: LeaveTypeBalanceEntity;
+    policy?: LeaveTypePolicyEntity;
+}

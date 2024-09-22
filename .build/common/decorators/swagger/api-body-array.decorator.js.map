@@ -1,0 +1,1 @@
+{"version":3,"file":"api-body-array.decorator.js","sourceRoot":"","sources":["../../../../src/common/decorators/swagger/api-body-array.decorator.ts"],"names":[],"mappings":";;;AACA,2CAAiD;AACjD,6CAA0C;AAEnC,MAAM,YAAY,GAAG,CAAgC,OAAgB,EAAE,EAAE,CAC9E,IAAA,wBAAe,EACb,IAAA,iBAAO,EAAC;IACN,OAAO,EAAE,IAAI;IACb,IAAI,EAAE,OAAO;CACd,CAAC,CACH,CAAC;AANS,QAAA,YAAY,gBAMrB"}

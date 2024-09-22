@@ -1,0 +1,34 @@
+import { BreakType, UnitTime, WorkArrangement } from '../../../common';
+import { CreateAutoDeductionDTO } from '../../auto-deduction/dtos';
+import { CreateBreakRuleDTO } from '../../break-rule/dtos';
+import { CreateDayScheduleDTO } from '../../day-schedule/dtos';
+import { CreateOvertimeDTO } from '../../overtime/dtos';
+import { EWorkScheduleState } from '../enums/work-schedule-state.enum';
+import { IWorkScheduleAssignee } from '../interfaces/work-schedule-assignee.interface';
+import { IWorkScheduleGroupAssignee } from '../interfaces/work-schedule-group-assignee.interface';
+export declare class CreateWorkScheduleBodyDTO {
+    name: string;
+    ttWorkScheduleId?: string;
+    utcOffset: number;
+    workArrangement: WorkArrangement;
+    breakType: BreakType;
+    default: boolean;
+    weeklyHours: number;
+    unitTime: UnitTime;
+    excludeEarlyClockIn: boolean;
+    autoDeductions: CreateAutoDeductionDTO[];
+    breaks: CreateBreakRuleDTO[];
+    daySchedules: CreateDayScheduleDTO[];
+    overtime: CreateOvertimeDTO;
+    locations: number[];
+    id?: string;
+    color?: string;
+    startDate?: string;
+    endDate?: string;
+    state?: EWorkScheduleState;
+    threshold?: number;
+    assigneeIds?: string[];
+    groupAssigneeIds?: string[];
+    assignees?: IWorkScheduleAssignee;
+    groupAssignees?: IWorkScheduleGroupAssignee;
+}

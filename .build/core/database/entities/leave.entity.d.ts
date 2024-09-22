@@ -1,0 +1,36 @@
+import { ELeaveDuration, ELeaveStatusId } from '../../../common/enums';
+import { AbstractEntity } from './abstract.entity';
+import { CompanyEntity } from './company.entity';
+import { EmployeeEntity } from './employee.entity';
+import { LeaveTypeEntity } from './leave-type.entity';
+import { TrxApprovalUserEntity } from './trx-approval-user.entity';
+export declare abstract class LeaveEntity extends AbstractEntity {
+    id: number;
+    leaveNo: number;
+    companyId: number;
+    employeeId: number;
+    leaveTypeId: number;
+    updatedBy: string;
+    createdBy: string;
+    reason: string;
+    statusId: ELeaveStatusId;
+    dateFrom: Date;
+    fromFdHd: ELeaveDuration;
+    dateTo: Date;
+    toFdHd: ELeaveDuration;
+    effDayOfLeave: number;
+    allMustApprove: boolean;
+    approvedOn: Date;
+    approvedBy: string;
+    cancelledOn?: Date;
+    cancelledBy?: string;
+    declinedOn?: Date;
+    declinedBy?: string;
+    fileCount: number;
+    parentLeaveTypeId?: number;
+    remark?: string;
+    company: CompanyEntity;
+    employee: EmployeeEntity;
+    leaveType: LeaveTypeEntity;
+    approverTrx?: TrxApprovalUserEntity[];
+}

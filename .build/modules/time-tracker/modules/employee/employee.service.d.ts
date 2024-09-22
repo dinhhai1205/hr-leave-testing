@@ -1,0 +1,204 @@
+import { Repository } from 'typeorm';
+import { PaginationResponseDto } from '../../../../common/dto';
+import { EmployeeEntity } from '../../../../core/database/entities';
+import { CompanyUserRoleService } from '../../../user/modules/company-user-role';
+import { EmployeeService } from '../../../user/modules/employee/employee.service';
+import { GeneralOptions } from '../../common';
+import { IMulterFileUploaded } from '../../common/interfaces';
+import { TimeTrackerApiService } from '../../libs/api/api.service';
+import { CompanyMappingService } from '../company-mapping/company-mapping.service';
+import { EmployeeMappingService } from '../employee-mapping/employee-mapping.service';
+import { GroupMappingService } from '../group-mapping/group-mapping.service';
+import { WorkScheduleService } from '../work-schedule';
+import { WorkScheduleAssignmentService } from '../work-schedule-assignment/work-schedule-assignment.service';
+import { AssignWorkScheduleEmployeesDto, ChangeRoleEmployeesResponseDto, CreateManyEmployeesDto, DeleteMultiEmployeeResponseDto, DeleteMultipleEmployeeBodyDto, EmployeeRoleBodyDto, PaginationEmployeeQueryDto, UnassignWorkScheduleEmployeesDto, UpdateEmployeeProfileDto } from './dtos';
+import { EmployeeResponseDto } from './dtos/employee-response.dto';
+export declare class TimeTrackerEmployeeService {
+    readonly employeeRepository: Repository<EmployeeEntity>;
+    private readonly apiService;
+    private readonly employeeMappingService;
+    private readonly employeeService;
+    private readonly groupMappingService;
+    private readonly companyMappingService;
+    private readonly workScheduleService;
+    private readonly companyUserRoleService;
+    private readonly workScheduleAssignmentService;
+    constructor(employeeRepository: Repository<EmployeeEntity>, apiService: TimeTrackerApiService, employeeMappingService: EmployeeMappingService, employeeService: EmployeeService, groupMappingService: GroupMappingService, companyMappingService: CompanyMappingService, workScheduleService: WorkScheduleService, companyUserRoleService: CompanyUserRoleService, workScheduleAssignmentService: WorkScheduleAssignmentService);
+    chunkArray<T>(array: T[], chunkSize: number): T[][];
+    createManyEmployees(options: GeneralOptions, companyId: number): Promise<EmployeeResponseDto[]>;
+    createMultiEmployee(payload: CreateManyEmployeesDto, options: GeneralOptions, companyId: number): Promise<EmployeeResponseDto[]>;
+    changeRoleOfEmployees(payload: EmployeeRoleBodyDto, companyId: number, options: GeneralOptions): Promise<ChangeRoleEmployeesResponseDto>;
+    changeRoleOfEmployeesWithUseMasterKey(payload: EmployeeRoleBodyDto, companyId: number, options: GeneralOptions): Promise<ChangeRoleEmployeesResponseDto>;
+    updateEmployeeAvatar(payload: {
+        file: IMulterFileUploaded;
+    }, options: GeneralOptions, employeeId: string): Promise<EmployeeResponseDto>;
+    getAllEmployees(options: GeneralOptions, query: PaginationEmployeeQueryDto, companyId: number): Promise<PaginationResponseDto<any>>;
+    getEmployeeById(options: GeneralOptions, employeeId: number, companyId: number): Promise<{
+        id: number;
+        companyId: number;
+        members: {
+            groupId: number;
+            employeeId: number;
+            group: {
+                id: number;
+                workScheduleId: string;
+                name: string;
+                description: string;
+                active: boolean;
+                members: import("../member/dtos").MemberResponseDto[];
+                isDeleted: boolean;
+                companyId?: string;
+                createdBy: string;
+                createdOn: Date;
+                updatedBy?: string;
+                updatedOn?: Date;
+            };
+            role: import("../../common").RoleGroup;
+            employee: EmployeeResponseDto;
+            id: string;
+            isDeleted: boolean;
+            companyId?: string;
+            createdBy: string;
+            createdOn: Date;
+            updatedBy?: string;
+            updatedOn?: Date;
+        }[];
+        roleInGroups: import("../../common").RoleGroup;
+        workScheduleId: string;
+        userId: string;
+        roleId: string;
+        roleName: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        avatar: string;
+        phone: string;
+        address: string;
+        age: number;
+        gender: string;
+        country: string;
+        timezone: string;
+        active: boolean;
+        workSchedule: import("../work-schedule/dtos").WorkScheduleResponseDto;
+        isDeleted: boolean;
+        createdBy: string;
+        createdOn: Date;
+        updatedBy?: string;
+        updatedOn?: Date;
+    }>;
+    getEmployeeInfoForClock(options: GeneralOptions, companyId: number, employeeId?: number): Promise<{
+        id: number;
+        members: {
+            groupId: number;
+            employeeId: number;
+            group: {
+                id: number;
+                workScheduleId: string;
+                name: string;
+                description: string;
+                active: boolean;
+                members: import("../member/dtos").MemberResponseDto[];
+                isDeleted: boolean;
+                companyId?: string;
+                createdBy: string;
+                createdOn: Date;
+                updatedBy?: string;
+                updatedOn?: Date;
+            };
+            role: import("../../common").RoleGroup;
+            employee: EmployeeResponseDto;
+            id: string;
+            isDeleted: boolean;
+            companyId?: string;
+            createdBy: string;
+            createdOn: Date;
+            updatedBy?: string;
+            updatedOn?: Date;
+        }[];
+        workSchedule: {
+            id: number | undefined;
+            name: string;
+            workArrangement: import("../../common").WorkArrangement;
+            breakType: import("../../common").BreakType;
+            default: boolean;
+            weeklyHours: number;
+            unitTime: import("../../common").UnitTime;
+            excludeEarlyClockIn: boolean;
+            employees: EmployeeResponseDto[];
+            groups: import("../group/dtos").GroupResponseDto[];
+            isDeleted: boolean;
+            companyId?: string;
+            createdBy: string;
+            createdOn: Date;
+            updatedBy?: string;
+            updatedOn?: Date;
+        } | null;
+        workScheduleId: number | null;
+        project: import("../project/dtos").ProjectResponseDto | undefined;
+        userId: string;
+        roleId: string;
+        roleName: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        avatar: string;
+        phone: string;
+        address: string;
+        age: number;
+        gender: string;
+        country: string;
+        timezone: string;
+        active: boolean;
+        activities?: import("../activity/dtos").ActivityResponseDto[];
+        assigneeGroups?: {
+            project: import("../project/dtos").ProjectResponseDto;
+        };
+        projects?: import("../project/dtos").ProjectResponseDto[];
+        isDeleted: boolean;
+        companyId?: string;
+        createdBy: string;
+        createdOn: Date;
+        updatedBy?: string;
+        updatedOn?: Date;
+    }>;
+    updateOwnEmployeeProfile(payload: UpdateEmployeeProfileDto, options: GeneralOptions, employeeId: string): Promise<EmployeeResponseDto>;
+    updateEmployeeProfile(payload: UpdateEmployeeProfileDto, options: GeneralOptions, employeeId: number, companyId: number): Promise<EmployeeResponseDto>;
+    deleteMultipleEmployees(payload: DeleteMultipleEmployeeBodyDto, options: GeneralOptions, companyId: number): Promise<DeleteMultiEmployeeResponseDto>;
+    assignWorkScheduleToEmployees({ assignWorkScheduleEmployeesDto, workScheduleId, companyId, options, userEmail, }: {
+        assignWorkScheduleEmployeesDto: AssignWorkScheduleEmployeesDto;
+        workScheduleId: number;
+        companyId: number;
+        options: GeneralOptions;
+        userEmail: string;
+    }): Promise<{
+        message: string;
+        employeeIds: number[];
+    }>;
+    assignWorkScheduleToEmployeesLeave({ assignWorkScheduleEmployeesDto, workScheduleId, companyId, userEmail, }: {
+        assignWorkScheduleEmployeesDto: AssignWorkScheduleEmployeesDto;
+        workScheduleId: number;
+        companyId: number;
+        userEmail: string;
+    }): Promise<{
+        message: string;
+        employeeIds: number[];
+    }>;
+    unaAssignWorkScheduleToEmployees({ assignWorkScheduleEmployeesDto, companyId, options, userEmail, }: {
+        assignWorkScheduleEmployeesDto: UnassignWorkScheduleEmployeesDto;
+        companyId: number;
+        options: GeneralOptions;
+        userEmail: string;
+    }): Promise<{
+        message: string;
+        employeeIds: number[];
+    }>;
+    unaAssignWorkScheduleToEmployeesLeave({ assignWorkScheduleEmployeesDto, companyId, userEmail, }: {
+        assignWorkScheduleEmployeesDto: UnassignWorkScheduleEmployeesDto;
+        companyId: number;
+        userEmail: string;
+    }): Promise<{
+        message: string;
+        employeeIds: number[];
+    }>;
+    createAdmin(companyId: string): Promise<EmployeeResponseDto>;
+}

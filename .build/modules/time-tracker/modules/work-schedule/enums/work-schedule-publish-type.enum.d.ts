@@ -1,0 +1,5 @@
+export declare enum EWorkSchedulePublishType {
+    JUST_PUBLISH_NEW = "JUST_PUBLISH_NEW",
+    PUBLISH_NEW_AND_OVERRIDE = "PUBLISH_NEW_AND_OVERRIDE",
+    JUST_OVERRIDE = "JUST_OVERRIDE"
+}

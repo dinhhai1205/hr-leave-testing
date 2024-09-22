@@ -1,0 +1,1 @@
+{"version":3,"file":"company.schema.js","sourceRoot":"","sources":["../../../../../../src/modules/payroll/modules/payroll-report/schema/company.schema.ts"],"names":[],"mappings":";;;AAAA,uCAAkC;AAGrB,QAAA,aAAa,GAAG,IAAI,iBAAM,CACrC;IACE,IAAI,EAAE,MAAM;IACZ,IAAI,EAAE,MAAM;IACZ,SAAS,EAAE,MAAM;IACjB,WAAW,EAAE,MAAM;IACnB,WAAW,EAAE,MAAM;CACpB,EACD,EAAE,GAAG,EAAE,KAAK,EAAE,CACf,CAAC"}
