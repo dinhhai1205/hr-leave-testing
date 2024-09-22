@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\"",
-    "start": "pm2 start .build/main.js",
+    "start": "pm2 start .build/main.js --name hr-leave-module",
     "start:dev": "NODE_ENV=local node .build/main.js",
     "start:debug": "nest start --debug --watch",
     "start:prod": "TZ=UTC node .build/main",
