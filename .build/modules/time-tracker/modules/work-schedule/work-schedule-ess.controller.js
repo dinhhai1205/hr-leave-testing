@@ -59,11 +59,10 @@ let WorkScheduleESSController = class WorkScheduleESSController {
             companyId,
         });
     }
-    getWorkScheduleDetail(companyId, workScheduleId, date) {
+    getWorkScheduleDetail(companyId, workScheduleId) {
         return this.workScheduleService.getDetailESSWorkSchedule({
             companyId,
             workScheduleId,
-            date,
         });
     }
 };
@@ -153,9 +152,8 @@ __decorate([
     (0, iam_1.Permissions)(enums_1.EApiAppMode.ESS, { selectedEmployeeFields: { id: true } }),
     __param(0, (0, common_1.Param)('companyId')),
     __param(1, (0, common_1.Param)('workScheduleId')),
-    __param(2, (0, common_1.Query)('date')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Number, Date]),
+    __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", void 0)
 ], WorkScheduleESSController.prototype, "getWorkScheduleDetail", null);
 exports.WorkScheduleESSController = WorkScheduleESSController = __decorate([

@@ -2596,7 +2596,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         };
     }
     async getDetailESSWorkSchedule(args) {
-        const { companyId, workScheduleId, date } = args;
+        const { companyId, workScheduleId } = args;
         const workScheduleDetail = await this.workScheduleRepository.findOne({
             where: {
                 companyId,
@@ -2622,25 +2622,12 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         }
         const getAssigneeAndCount = this.countAndGetFirstFiveObjects(workScheduleDetail.assignees);
         const groupAssignees = this.countAndGetFirstFiveObjects(workScheduleDetail.groupAssignees);
-        const queryDate = date ? new Date(date) : new Date();
-        const daySchedule = this.getScheduleForDate(queryDate, workScheduleDetail.daySchedules);
-        if (daySchedule) {
-            daySchedule.from = moment
-                .utc(daySchedule.from, 'HH:mm:ss')
-                .utcOffset(workScheduleDetail.utcOffset)
-                .format('HH:mm:ssZ');
-            daySchedule.to = moment
-                .utc(daySchedule.to, 'HH:mm:ss')
-                .utcOffset(workScheduleDetail.utcOffset * 60)
-                .format('HH:mm:ssZ');
-        }
         return {
             ...workScheduleDetail,
             assignees: getAssigneeAndCount.firstFiveObjects,
             assigneesCount: getAssigneeAndCount.totalCount,
             groupAssignees: groupAssignees.firstFiveObjects,
             groupAssigneesCount: groupAssignees.totalCount,
-            daySchedules: daySchedule,
         };
     }
     countAndGetFirstFiveObjects(jsonData) {

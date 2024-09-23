@@ -316,7 +316,6 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
     getDetailESSWorkSchedule(args: {
         companyId: number;
         workScheduleId: number;
-        date: Date;
     }): Promise<{
         assignees: {
             [k: string]: unknown;
@@ -326,7 +325,6 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
             [k: string]: unknown;
         };
         groupAssigneesCount: number;
-        daySchedules: DayScheduleEntity | null;
         ttWorkScheduleId: string;
         name: string;
         utcOffset: number;
@@ -349,6 +347,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         autoDeductions: AutoDeductionEntity[];
         breaks: BreakRuleEntity[];
         locationWorkSchedules: import("../../../../core/database").LocationWorkScheduleEntity[];
+        daySchedules: DayScheduleEntity[];
         workScheduleAssignment: WorkScheduleAssignmentEntity[];
         employees: EmployeeEntity[];
         workScheduleTags: import("../../../../core/database").WorkScheduleTagEntity[];

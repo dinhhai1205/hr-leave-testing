@@ -73,7 +73,7 @@ export declare class WorkScheduleESSController {
             parentGroupName?: string | null;
         }[];
     }>;
-    getWorkScheduleDetail(companyId: number, workScheduleId: number, date: Date): Promise<{
+    getWorkScheduleDetail(companyId: number, workScheduleId: number): Promise<{
         assignees: {
             [k: string]: unknown;
         };
@@ -82,7 +82,6 @@ export declare class WorkScheduleESSController {
             [k: string]: unknown;
         };
         groupAssigneesCount: number;
-        daySchedules: import("../../../../core/database").DayScheduleEntity | null;
         ttWorkScheduleId: string;
         name: string;
         utcOffset: number;
@@ -105,6 +104,7 @@ export declare class WorkScheduleESSController {
         autoDeductions: import("../../../../core/database").AutoDeductionEntity[];
         breaks: import("../../../../core/database").BreakRuleEntity[];
         locationWorkSchedules: import("../../../../core/database").LocationWorkScheduleEntity[];
+        daySchedules: import("../../../../core/database").DayScheduleEntity[];
         workScheduleAssignment: import("../../../../core/database/entities/work-schedule-assignment.entity").WorkScheduleAssignmentEntity[];
         employees: import("../../../../core/database").EmployeeEntity[];
         workScheduleTags: import("../../../../core/database").WorkScheduleTagEntity[];

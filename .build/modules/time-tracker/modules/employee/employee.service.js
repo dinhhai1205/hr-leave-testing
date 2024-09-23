@@ -510,19 +510,6 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
             }, {});
             await this.workScheduleService.updateAddAssigneesOfWorkSchedule(workScheduleId, assigneesDto, companyId, userEmail);
         }
-        if (workSchedule.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED) {
-            const { startDate, endDate } = workSchedule;
-            if (employeeIds.length > 0) {
-                this.workScheduleAssignmentService.publishWorkScheduleAssignment({
-                    companyId,
-                    userEmail,
-                    workScheduleId,
-                    assigneeIds: employeeIds,
-                    startDate: startDate instanceof Date ? startDate.toISOString() : startDate,
-                    endDate: endDate instanceof Date ? endDate.toISOString() : endDate,
-                });
-            }
-        }
         const ttWorkScheduleId = workSchedule.ttWorkScheduleId;
         const ttEmployeeIds = employeeMapping.map(e => e.timeTrackerEmployeeId);
         if (ttEmployeeIds.length > 0) {
@@ -582,19 +569,6 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
             }, {});
             await this.workScheduleService.updateAddAssigneesOfWorkSchedule(workScheduleId, assigneesDto, companyId, userEmail);
         }
-        if (workSchedule.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED) {
-            const { startDate, endDate, daySchedules } = workSchedule;
-            if (employeeIds.length > 0) {
-                this.workScheduleAssignmentService.publishWorkScheduleAssignment({
-                    companyId,
-                    userEmail,
-                    workScheduleId,
-                    assigneeIds: employeeIds,
-                    startDate: startDate instanceof Date ? startDate.toISOString() : startDate,
-                    endDate: endDate instanceof Date ? endDate.toISOString() : endDate,
-                });
-            }
-        }
         return {
             message: 'Assign work schedule to employees successfully',
             employeeIds,
@@ -615,7 +589,6 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
                 return acc;
             }, {});
             await Promise.all(Object.keys(workScheduleAssigneeMap).map(workScheduleId => this.workScheduleService.updateRemoveAssigneesOfWorkSchedule(+workScheduleId, workScheduleAssigneeMap[+workScheduleId], companyId, userEmail)));
-            await this.workScheduleAssignmentService.deleteAssignmentsOfEmployeeIdsWithWorkScheduleIds(employeeWorkSchedules, companyId, userEmail);
             if (employeeIds.length > 0) {
                 await this.employeeRepository
                     .createQueryBuilder()
@@ -689,7 +662,6 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
                 return acc;
             }, {});
             await Promise.all(Object.keys(workScheduleAssigneeMap).map(workScheduleId => this.workScheduleService.updateRemoveAssigneesOfWorkSchedule(+workScheduleId, workScheduleAssigneeMap[+workScheduleId], companyId, userEmail)));
-            await this.workScheduleAssignmentService.deleteAssignmentsOfEmployeeIdsWithWorkScheduleIds(employeeWorkSchedules, companyId, userEmail);
             if (employeeIds.length > 0) {
                 await this.employeeRepository
                     .createQueryBuilder()

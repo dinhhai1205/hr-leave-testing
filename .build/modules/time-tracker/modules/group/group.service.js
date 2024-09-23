@@ -609,22 +609,6 @@ let GroupService = class GroupService {
             }, {});
             await this.workScheduleService.updateAddGroupAssigneesOfWorkSchedule(workScheduleId, assigneeGroupsDto, companyId, userEmail);
         }
-        if (workSchedule.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED) {
-            const orgPaths = groups?.map(group => group.orgPath);
-            const employees = await this.getAllEmployeesInGroupAndSubGroups(companyId, orgPaths);
-            const assigneeIds = employees.map(e => e.id);
-            const { startDate, endDate } = workSchedule;
-            if (assigneeIds.length > 0) {
-                this.workScheduleAssignmentService.publishWorkScheduleAssignment({
-                    companyId,
-                    userEmail,
-                    workScheduleId,
-                    assigneeIds,
-                    startDate: startDate instanceof Date ? startDate.toISOString() : startDate,
-                    endDate: endDate instanceof Date ? endDate.toISOString() : endDate,
-                });
-            }
-        }
         const ttGroupIds = groupMappings.map(g => g.timeTrackerGroupId);
         const ttWorkScheduleId = workSchedule.ttWorkScheduleId;
         await this.apiService.request({
@@ -679,22 +663,6 @@ let GroupService = class GroupService {
             }, {});
             await this.workScheduleService.updateAddGroupAssigneesOfWorkSchedule(workScheduleId, assigneeGroupsDto, companyId, userEmail);
         }
-        if (workSchedule.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED) {
-            const orgPaths = groups?.map(group => group.orgPath);
-            const employees = await this.getAllEmployeesInGroupAndSubGroups(companyId, orgPaths);
-            const assigneeIds = employees.map(e => e.id);
-            const { startDate, endDate } = workSchedule;
-            if (assigneeIds.length > 0) {
-                this.workScheduleAssignmentService.publishWorkScheduleAssignment({
-                    companyId,
-                    userEmail,
-                    workScheduleId,
-                    assigneeIds,
-                    startDate: startDate instanceof Date ? startDate.toISOString() : startDate,
-                    endDate: endDate instanceof Date ? endDate.toISOString() : endDate,
-                });
-            }
-        }
         return {
             message: 'Assign work schedule to groups successfully',
             orgIds,
@@ -724,27 +692,7 @@ let GroupService = class GroupService {
             }, {});
             await Promise.all(Object.keys(workScheduleAssigneeMap).map(workScheduleId => this.workScheduleService.updateRemoveGroupAssigneesOfWorkSchedule(+workScheduleId, workScheduleAssigneeMap[+workScheduleId], companyId, userEmail)));
             const workScheduleIds = groupWorkSchedules?.map(groupWorkSchedule => groupWorkSchedule.workScheduleId);
-            const workSchedules = await this.workScheduleService.getTTWorkSchedulesByWorkScheduleIdsWithAssignees(workScheduleIds, companyId);
-            const orgPaths = orgs?.map(org => org.orgPath);
-            const employeesInOrgs = await this.getAllEmployeesInGroupAndSubGroups(companyId, orgPaths);
-            const employeeWorkSchedulesMap = new Map();
-            workSchedules?.map(workSchedule => {
-                const { assignees } = workSchedule;
-                const assigneeIdsSet = new Set(Object.keys(assignees).map(employeeId => Number(employeeId)));
-                for (const employee of employeesInOrgs) {
-                    if (!assigneeIdsSet.has(employee.id)) {
-                        const key = `${employee.id}-${workSchedule.id}`;
-                        if (!employeeWorkSchedulesMap.has(key)) {
-                            employeeWorkSchedulesMap.set(key, {
-                                employeeId: employee.id,
-                                workScheduleId: workSchedule.id,
-                            });
-                        }
-                    }
-                }
-            });
-            const employeeWorkSchedulesToDelete = Array.from(employeeWorkSchedulesMap.values());
-            await this.workScheduleAssignmentService.deleteAssignmentsOfEmployeeIdsWithWorkScheduleIds(employeeWorkSchedulesToDelete, companyId, userEmail);
+            const workSchedules = await this.workScheduleService.getTTWorkSchedulesByWorkScheduleIds(workScheduleIds, companyId);
             if (orgIds.length > 0) {
                 await this.orgRepository
                     .createQueryBuilder()
@@ -824,28 +772,6 @@ let GroupService = class GroupService {
                 return acc;
             }, {});
             await Promise.all(Object.keys(workScheduleAssigneeMap).map(workScheduleId => this.workScheduleService.updateRemoveGroupAssigneesOfWorkSchedule(+workScheduleId, workScheduleAssigneeMap[+workScheduleId], companyId, userEmail)));
-            const workScheduleIds = groupWorkSchedules?.map(groupWorkSchedule => groupWorkSchedule.workScheduleId);
-            const workSchedules = await this.workScheduleService.getTTWorkSchedulesByWorkScheduleIdsWithAssignees(workScheduleIds, companyId);
-            const orgPaths = orgs?.map(org => org.orgPath);
-            const employeesInOrgs = await this.getAllEmployeesInGroupAndSubGroups(companyId, orgPaths);
-            const employeeWorkSchedulesMap = new Map();
-            workSchedules?.map(workSchedule => {
-                const { assignees } = workSchedule;
-                const assigneeIdsSet = new Set(Object.keys(assignees).map(employeeId => Number(employeeId)));
-                for (const employee of employeesInOrgs) {
-                    if (!assigneeIdsSet.has(employee.id)) {
-                        const key = `${employee.id}-${workSchedule.id}`;
-                        if (!employeeWorkSchedulesMap.has(key)) {
-                            employeeWorkSchedulesMap.set(key, {
-                                employeeId: employee.id,
-                                workScheduleId: workSchedule.id,
-                            });
-                        }
-                    }
-                }
-            });
-            const employeeWorkSchedulesToDelete = Array.from(employeeWorkSchedulesMap.values());
-            await this.workScheduleAssignmentService.deleteAssignmentsOfEmployeeIdsWithWorkScheduleIds(employeeWorkSchedulesToDelete, companyId, userEmail);
             if (orgIds.length > 0) {
                 await this.orgRepository
                     .createQueryBuilder()
