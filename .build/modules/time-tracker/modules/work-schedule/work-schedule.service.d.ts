@@ -382,4 +382,13 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         groupId: number | undefined;
         groupName: string | undefined;
     } | null)[]>;
+    getAllGroupWorkScheduleOfEmployee(employeeId: number, companyId: number): Promise<WorkScheduleEntity[]>;
+    getOldestLatestWorkSchedule(workSchedules: WorkScheduleEntity[], type: 'oldest' | 'latest'): null;
+    getMainWorkScheduleInDate(date: string, workSchedules: WorkScheduleEntity[]): WorkScheduleEntity | null;
+    getWorkScheduleOfEmployeeInDateRange(params: {
+        employeeId: number;
+        companyId: number;
+        startDate: string;
+        endDate?: string;
+    }): Promise<Record<string, WorkScheduleEntity>>;
 }

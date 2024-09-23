@@ -1,5 +1,5 @@
 import * as moment from 'moment';
-import { FindOptionsSelect, FindOptionsWhere, Repository, SelectQueryBuilder } from 'typeorm';
+import { FindOneOptions, FindOptionsSelect, FindOptionsWhere, Repository, SelectQueryBuilder } from 'typeorm';
 import { PaginationResponseDto } from '../../../../common/dto';
 import { EEmployeeContractType } from '../../../../common/enums';
 import { IAuthInfo } from '../../../../common/interfaces';
@@ -75,7 +75,7 @@ export declare class EmployeeService extends LegacyBaseService<EmployeeEntity> {
     }): Promise<PaginationResponseDto<EmployeeEntity>>;
     getAllEmployeesWithWorkScheduleDefault(companyId: number): Promise<EmployeeEntity[]>;
     findEmployeesExistWithEmails(companyId: number, email: string[]): Promise<string[]>;
-    getEmployeeById(companyId: number, employeeId: number): Promise<EmployeeEntity | null>;
+    getEmployeeById(companyId: number, employeeId: number, options?: FindOneOptions<EmployeeEntity>): Promise<EmployeeEntity | null>;
     getEmployeeByEmployeeRef(companyId: number, employeeRefs: string[]): Promise<EmployeeEntity[]>;
     getPayrollTimesheetOfEmployeeByPrtrxHdr(employeeId: number, hdrId: number, companyId: number): Promise<import("../../../../core/database/entities/payroll-timesheet.entity").PayrollTimeSheetEntity | undefined>;
     getPayrollGroupByEmployeeId(employeeId: number, companyId: number): Promise<PayrollGroupEntity>;

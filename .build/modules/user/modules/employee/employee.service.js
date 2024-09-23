@@ -611,7 +611,7 @@ let EmployeeService = class EmployeeService extends services_1.LegacyBaseService
             return [];
         return employees.map(({ email }) => email);
     }
-    async getEmployeeById(companyId, employeeId) {
+    async getEmployeeById(companyId, employeeId, options) {
         return this.employeeRepository.findOne({
             where: {
                 id: employeeId,
@@ -619,6 +619,7 @@ let EmployeeService = class EmployeeService extends services_1.LegacyBaseService
                 isDeleted: false,
                 active: true,
             },
+            ...options,
         });
     }
     async getEmployeeByEmployeeRef(companyId, employeeRefs) {

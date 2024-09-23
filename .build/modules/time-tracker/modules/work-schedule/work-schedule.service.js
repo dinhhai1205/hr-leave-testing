@@ -832,7 +832,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         const totalCount = await queryBuilder.getCount();
         const { default: defaultSchedules, notDefault: nonDefaultSchedules } = worSchedules.reduce((acc, worSchedule) => {
             const schedule = {
-                id: worSchedule.work_schedule_id,
+                id: +worSchedule.work_schedule_id,
                 name: worSchedule.work_schedule_name,
                 default: worSchedule.work_schedule_default,
                 color: worSchedule.work_schedule_color,
@@ -2700,6 +2700,142 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             return null;
         }));
         return employeeWorkSchedules.filter(Boolean);
+    }
+    async getAllGroupWorkScheduleOfEmployee(employeeId, companyId) {
+        const employee = await this.employeeService.getEmployeeById(companyId, employeeId, { relations: ['orgStructure'] });
+        if (!employee) {
+            return [];
+        }
+        const groupIds = employee.orgPath
+            ?.split('/')
+            .map(id => parseInt(id, 10))
+            .filter(Boolean)
+            .reverse() || [];
+        const allWorkSchedules = await this.workScheduleRepository.find({
+            where: {
+                isDeleted: false,
+                companyId,
+            },
+        });
+        const groupWorkSchedules = allWorkSchedules.filter(item => {
+            if ((0, utils_1.isEmptyObject)(item.groupAssignees))
+                return false;
+            const groupAssigneeIds = Object.values(item.groupAssignees).map(item => item.id);
+            const theClosestGroup = groupIds.find(id => groupAssigneeIds.includes(id));
+            return !!theClosestGroup;
+        });
+        return groupWorkSchedules;
+    }
+    getOldestLatestWorkSchedule(workSchedules, type) {
+        let updatedOn = null;
+        let workSchedule = null;
+        workSchedules.forEach(schedule => {
+            schedule.publishHistories.forEach(history => {
+                const condition = !updatedOn ||
+                    (type === 'latest'
+                        ? new Date(history.updatedOn) > new Date(updatedOn)
+                        : new Date(history.updatedOn) < new Date(updatedOn));
+                if (condition) {
+                    updatedOn = history.updatedOn;
+                    workSchedule = schedule;
+                }
+            });
+        });
+        return workSchedule;
+    }
+    getMainWorkScheduleInDate(date, workSchedules) {
+        if (workSchedules.length === 0)
+            return null;
+        if (workSchedules.length === 1)
+            return workSchedules[0];
+        const activeWorkSchedules = workSchedules.filter(schedule => schedule.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED &&
+            moment(date).isBetween(schedule.startDate, schedule.endDate, null, '[]'));
+        const publishNewAndOverrideWorkSchedules = [];
+        const publishNewWorkSchedules = [];
+        activeWorkSchedules.forEach(schedule => {
+            switch (schedule.publishType) {
+                case work_schedule_publish_type_enum_1.EWorkSchedulePublishType.JUST_PUBLISH_NEW:
+                    publishNewWorkSchedules.push(schedule);
+                    break;
+                case work_schedule_publish_type_enum_1.EWorkSchedulePublishType.PUBLISH_NEW_AND_OVERRIDE:
+                    publishNewAndOverrideWorkSchedules.push(schedule);
+                    break;
+                default:
+            }
+        });
+        if (publishNewAndOverrideWorkSchedules.length > 0) {
+            return this.getOldestLatestWorkSchedule(publishNewAndOverrideWorkSchedules, 'latest');
+        }
+        if (publishNewWorkSchedules.length > 0) {
+            return this.getOldestLatestWorkSchedule(publishNewAndOverrideWorkSchedules, 'oldest');
+        }
+        return null;
+    }
+    async getWorkScheduleOfEmployeeInDateRange(params) {
+        const { employeeId, companyId, startDate } = params;
+        const endDate = params.endDate || startDate;
+        const workScheduleAlias = database_1.ETableName.WORK_SCHEDULE;
+        const groupWorkSchedules = (await this.getAllGroupWorkScheduleOfEmployee(employeeId, companyId)) ||
+            [];
+        const assignedWorkSchedules = await this.workScheduleRepository
+            .createQueryBuilder(workScheduleAlias)
+            .select([
+            `${workScheduleAlias}.id`,
+            `${workScheduleAlias}.assignees`,
+            `${workScheduleAlias}.groupAssignees`,
+            `${workScheduleAlias}.publishHistories`,
+            `${workScheduleAlias}.ttWorkScheduleId`,
+            `${workScheduleAlias}.name`,
+            `${workScheduleAlias}.color`,
+            `${workScheduleAlias}.breakType`,
+            `${workScheduleAlias}.utcOffset`,
+            `${workScheduleAlias}.workArrangement`,
+            `${workScheduleAlias}.excludeEarlyClockIn`,
+            `${workScheduleAlias}.weeklyHours`,
+            `${workScheduleAlias}.publishType`,
+            `${workScheduleAlias}.startDate`,
+            `${workScheduleAlias}.endDate`,
+            `${workScheduleAlias}.state`,
+        ])
+            .where(`${workScheduleAlias}.assignees::jsonb ? :employeeId
+        AND ${workScheduleAlias}.isDeleted = :isDeleted
+        AND ${workScheduleAlias}.companyId = :companyId
+        AND ${workScheduleAlias}.state = :state`, {
+            employeeId: employeeId.toString(),
+            companyId,
+            isDeleted: false,
+            state: work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED,
+        })
+            .getMany();
+        const workSchedules = [...groupWorkSchedules, ...assignedWorkSchedules];
+        const workScheduleById = {};
+        workSchedules.forEach(workSchedule => {
+            const { id } = workSchedule;
+            if (id && !workScheduleById?.[id]) {
+                workScheduleById[id] = workSchedule;
+            }
+        });
+        const listDates = (0, common_2.getDaysBetweenDates)(startDate, endDate);
+        let workScheduleAssignmentByDate = {};
+        try {
+            workScheduleAssignmentByDate =
+                await this.workScheduleAssignmentService.getWorkScheduleOfEmployeeMultipleDate({ employeeId, date: listDates, companyId });
+        }
+        catch (error) {
+            console.error('[ERROR] getWorkScheduleOfEmployeeInDateRange: ', error);
+        }
+        const workScheduleByDate = {};
+        listDates.forEach(date => {
+            if (workScheduleAssignmentByDate[date]) {
+                workScheduleByDate[date] = workScheduleAssignmentByDate[date];
+                return;
+            }
+            const workSchedule = this.getMainWorkScheduleInDate(date, workSchedules);
+            if (workSchedule) {
+                workScheduleByDate[date] = workSchedule;
+            }
+        });
+        return workScheduleByDate;
     }
 };
 exports.WorkScheduleService = WorkScheduleService;
