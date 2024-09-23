@@ -27,7 +27,21 @@ let ActivityService = class ActivityService {
             type: 'GET_ALL_ACTIVITIES',
             segments: { companyId: options.companyId },
         });
-        return data;
+        const { data: activityData } = data;
+        const result = activityData?.map(activity => ({
+            id: activity.id,
+            createdBy: activity.createdBy,
+            createdOn: activity.createdOn,
+            updatedBy: activity.updatedBy,
+            name: activity.name,
+            activityCode: activity.activityCode,
+            description: activity.description,
+            color: activity.color,
+            assigneeGroups: activity.activityGroups.map(groupAssignee => ({
+                ...groupAssignee,
+            })),
+        }));
+        return { ...data, data: result };
     }
     async createActivity(payload, options) {
         const { data } = await this.apiService.request({

@@ -6,7 +6,31 @@ import { AssigneesProjectQueryDto } from '../project/dtos';
 export declare class ActivityController {
     private readonly activityService;
     constructor(activityService: ActivityService);
-    getAllActivities(companyId: number, query: PaginationQueryDto, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<import("../../../../common/dto").PaginationResponseDto<import("./activity.entity").ActivityEntity>>;
+    getAllActivities(companyId: number, query: PaginationQueryDto, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<{
+        data: {
+            id: number;
+            createdBy: string;
+            createdOn: Date;
+            updatedBy: string | undefined;
+            name: string;
+            activityCode: string;
+            description: string;
+            color: string;
+            assigneeGroups: {
+                id: string;
+                companyId: number;
+                groupId: string;
+                activityId: string;
+                group: import("../group/dtos").GroupResponseDto;
+            }[];
+        }[];
+        page: number;
+        take: number;
+        itemCount: number;
+        pageCount: number;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+    }>;
     getAllGroupAssigneesByActivity(companyId: number, activityId: string, { timeTrackerCompanyId }: TimeTrackerMapping, paginationQueryDto: AssigneesProjectQueryDto): Promise<{
         data: {
             id: string;

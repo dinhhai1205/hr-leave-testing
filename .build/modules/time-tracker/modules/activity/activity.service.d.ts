@@ -1,6 +1,5 @@
 import { TimeTrackerApiService } from '../../libs/api/api.service';
 import { GeneralOptions } from '../../common/types';
-import { PaginationResponseDto } from '../../../../common/dto';
 import { ActivityEntity } from './activity.entity';
 import { ArchivedActivity, CreateActivityDto, UpdateActivityBodyDto } from './dtos';
 import { PaginationQueryDto } from '../../common';
@@ -14,7 +13,31 @@ export declare class ActivityService {
     private readonly employeeMappingService;
     private readonly companyMappingService;
     constructor(apiService: TimeTrackerApiService, groupMappingService: GroupMappingService, employeeMappingService: EmployeeMappingService, companyMappingService: CompanyMappingService);
-    getAllActivities(options: GeneralOptions, query: PaginationQueryDto): Promise<PaginationResponseDto<ActivityEntity>>;
+    getAllActivities(options: GeneralOptions, query: PaginationQueryDto): Promise<{
+        data: {
+            id: number;
+            createdBy: string;
+            createdOn: Date;
+            updatedBy: string | undefined;
+            name: string;
+            activityCode: string;
+            description: string;
+            color: string;
+            assigneeGroups: {
+                id: string;
+                companyId: number;
+                groupId: string;
+                activityId: string;
+                group: import("../group/dtos").GroupResponseDto;
+            }[];
+        }[];
+        page: number;
+        take: number;
+        itemCount: number;
+        pageCount: number;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+    }>;
     createActivity(payload: CreateActivityDto, options: GeneralOptions): Promise<ActivityEntity>;
     archivedActivities(payload: ArchivedActivity, options: GeneralOptions): Promise<ActivityEntity[]>;
     updateActivity(payload: {
