@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TimeEntryService = void 0;
 const common_1 = require("@nestjs/common");
 const services_1 = require("../../../../time-off/modules/leave/services");
-const employee_service_1 = require("../../../../user/modules/employee/employee.service");
 const common_2 = require("../../../common");
 const api_service_1 = require("../../../libs/api/api.service");
 const employee_mapping_service_1 = require("../../employee-mapping/employee-mapping.service");
@@ -21,16 +20,17 @@ const work_schedule_1 = require("../../work-schedule");
 const moment = require("moment");
 const prtrx_hdr_service_1 = require("../../../../payroll/modules/prtrx-hdr/prtrx-hdr.service");
 const group_mapping_service_1 = require("../../group-mapping/group-mapping.service");
+const employee_service_1 = require("../../employee/employee.service");
 let TimeEntryService = class TimeEntryService {
-    constructor(apiService, employeeMappingService, workScheduleService, leaveService, timeSheetAdjustmentService, employeeService, prtrxHdrService, groupMappingService) {
+    constructor(apiService, employeeMappingService, workScheduleService, leaveService, timeSheetAdjustmentService, prtrxHdrService, groupMappingService, timeTrackerEmployeeService) {
         this.apiService = apiService;
         this.employeeMappingService = employeeMappingService;
         this.workScheduleService = workScheduleService;
         this.leaveService = leaveService;
         this.timeSheetAdjustmentService = timeSheetAdjustmentService;
-        this.employeeService = employeeService;
         this.prtrxHdrService = prtrxHdrService;
         this.groupMappingService = groupMappingService;
+        this.timeTrackerEmployeeService = timeTrackerEmployeeService;
     }
     async createTimeEntry(createTimeEntryBodyDto, ttCompanyId, companyId) {
         const employeeMapping = await this.employeeMappingService.getManyEmployeeMappingByIds({
@@ -144,12 +144,43 @@ let TimeEntryService = class TimeEntryService {
             },
         };
     }
-    async handleSummarizOverviewTimeEntries(companyId, ttCompanyId, query) {
+    async handleSummarizeOverviewTimeEntries(companyId, ttCompanyId, query) {
+        const { employeeIds = [], workScheduleIds = [], groupIds = [] } = query;
+        let ttEmployeeIdsQuery = [];
+        if (employeeIds?.length > 0) {
+            const employeeMappings = await this.employeeMappingService.getManyEmployeeMappingByIds({
+                companyId,
+                employeeIds,
+            });
+            if (employeeMappings?.length === 0) {
+                throw new common_1.BadRequestException('Employee mapping(s) not found');
+            }
+            ttEmployeeIdsQuery = employeeMappings?.map(e => e.timeTrackerEmployeeId);
+        }
+        let ttWorkScheduleIdsQuery = [];
+        if (workScheduleIds?.length > 0) {
+            const workSchedules = await this.workScheduleService.getTTWorkSchedulesByWorkScheduleIds(workScheduleIds, companyId);
+            if (workSchedules?.length === 0) {
+                throw new common_1.BadRequestException('Work schedule(s) not found!');
+            }
+            ttWorkScheduleIdsQuery = workSchedules?.map(ws => ws.ttWorkScheduleId);
+        }
+        let ttGroupIdsQuery = [];
+        if (groupIds?.length > 0) {
+            const groupMappings = await this.groupMappingService.getGroupMappings(groupIds, companyId);
+            if (groupMappings?.length === 0) {
+                throw new common_1.BadRequestException('Group mapping(s) not found');
+            }
+            ttGroupIdsQuery = groupMappings?.map(g => g.timeTrackerGroupId);
+        }
         const { data: dataOverview } = await this.apiService.request({
             type: 'GET_TIME_ENTRY_OVERVIEW_SUMMARIZE',
             segments: { companyId: ttCompanyId },
             params: {
                 ...query,
+                groupIds: ttGroupIdsQuery ? ttGroupIdsQuery : [],
+                employeeIds: ttEmployeeIdsQuery ? ttEmployeeIdsQuery : [],
+                workScheduleIds: ttWorkScheduleIdsQuery ? ttWorkScheduleIdsQuery : [],
             },
         });
         return dataOverview;
@@ -215,6 +246,14 @@ let TimeEntryService = class TimeEntryService {
         });
         const empIds = employeeMapping.map(item => item.employeeId);
         const normalizedWorkScheduleMapping = await this.workScheduleService.getNormalizedWorkScheduleByEmployee(empIds, companyId);
+        const employeeInfo = await this.timeTrackerEmployeeService.getEmployeeRefAndEmailUsingEIds(empIds);
+        const employeeRecord = employeeInfo.reduce((acc, employee) => {
+            acc[employee.id] = {
+                email: employee.email,
+                employeeRef: employee.employeeRef,
+            };
+            return acc;
+        }, {});
         const result = data?.map(item => {
             if (item.employeeInfo) {
                 const ttEmployeeId = item.employeeInfo.id || '';
@@ -225,6 +264,8 @@ let TimeEntryService = class TimeEntryService {
                     employeeInfo: {
                         ...item?.employeeInfo,
                         id: employeeId,
+                        email: employeeRecord[employeeId].email,
+                        employeeRef: employeeRecord[employeeId].employeeRef,
                     },
                 };
                 return overview;
@@ -447,8 +488,8 @@ exports.TimeEntryService = TimeEntryService = __decorate([
         work_schedule_1.WorkScheduleService,
         services_1.LeaveService,
         services_2.TimeSheetAdjustmentService,
-        employee_service_1.EmployeeService,
         prtrx_hdr_service_1.PrtrxHdrService,
-        group_mapping_service_1.GroupMappingService])
+        group_mapping_service_1.GroupMappingService,
+        employee_service_1.TimeTrackerEmployeeService])
 ], TimeEntryService);
 //# sourceMappingURL=time-entry.service.js.map

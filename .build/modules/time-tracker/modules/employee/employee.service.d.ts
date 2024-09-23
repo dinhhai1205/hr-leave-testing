@@ -201,4 +201,5 @@ export declare class TimeTrackerEmployeeService {
         employeeIds: number[];
     }>;
     createAdmin(companyId: string): Promise<EmployeeResponseDto>;
+    getEmployeeRefAndEmailUsingEIds(Ids: number[]): Promise<EmployeeEntity[]>;
 }

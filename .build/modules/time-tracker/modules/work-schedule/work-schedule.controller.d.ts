@@ -12,7 +12,7 @@ export declare class WorkScheduleController {
     getTTWorkScheduleDefault({ companyId }: BaseParamDto, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<any>;
     getLeaveWorkScheduleDefault({ companyId }: BaseParamDto): Promise<import("../../../../core/database").WorkScheduleEntity | null>;
     getTTWorkScheduleByWorkScheduleId(workScheduleId: string, { companyId }: BaseParamDto, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<any>;
-    getAllWorkSchedulesIsOverlap(params: PublishWorkScheduleParamsDto, query: GetAllWorkScheduleOverlapQueryDto): Promise<import("./dtos/work-schedules-overlap.dto").WorkSchedulesOverlapResponse[]>;
+    getAllWorkSchedulesIsOverlap(params: PublishWorkScheduleParamsDto, query: GetAllWorkScheduleOverlapQueryDto): Promise<import("../../../../core/database").WorkScheduleEntity[]>;
     getListBreaksOfWorkSchedule(employeeId: number, paginationQueryDto: PaginationQueryWithDateDto, { companyId }: BaseParamDto): Promise<import("../../../../common/dto").PaginationResponseDto<import("../../../../core/database").BreakRuleEntity>>;
     getAllTTWorkScheduleByCompanyId({ companyId }: BaseParamDto, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<any>;
     checkInDefaultWorkSchedule({ companyId }: BaseParamDto, checkInDefaultWorkScheduleDto: CheckInDefaultWorkScheduleDto): Promise<{

@@ -1631,7 +1631,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 publishType,
             }),
         ]);
-        if (endDate) {
+        if (endDate && new Date(endDate) >= new Date()) {
             await this.handleExpiredWorkSchedule(workSchedule, companyId, endDate, timeTrackerCompanyId);
         }
         if (timeTrackerCompanyId) {
@@ -1740,7 +1740,9 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         if (relatedActions.isExistedAnyRelatedActions) {
             throw new common_1.BadRequestException(`Unable to unpublish the work schedule as some employees have already ${relatedActions.relatedAction} the schedule.`);
         }
-        if (workSchedule.endDate) {
+        const workScheduleEndDate = workSchedule.endDate;
+        const isInThePast = new Date(workScheduleEndDate) >= new Date();
+        if (workScheduleEndDate && isInThePast) {
             this.cancelScheduleExpiredJob(workSchedule.id);
         }
         await this.update(workScheduleId, {
@@ -1837,10 +1839,15 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
     }
     cancelScheduleExpiredJob(workScheduleId) {
         const jobName = `delete-work-schedule-${workScheduleId}`;
-        const job = this.schedulerRegistry.getCronJob(jobName);
-        if (job) {
-            job.stop();
-            this.schedulerRegistry.deleteCronJob(jobName);
+        try {
+            const job = this.schedulerRegistry.getCronJob(jobName);
+            if (job) {
+                job.stop();
+                this.schedulerRegistry.deleteCronJob(jobName);
+            }
+        }
+        catch (error) {
+            console.error('[Error] cancelScheduleExpiredJob: ', error);
         }
     }
     async updateWorkScheduleDefault(args) {
@@ -2252,33 +2259,33 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         return groupAssigneesArray;
     }
     async getAllWorkSchedulesIsOverlap(params) {
-        const { companyId, workScheduleId, endDate, startDate } = params;
-        const wsaAlias = database_1.ETableName.WORK_SCHEDULE_ASSIGNMENT;
-        const workScheduleAssignments = await this.workScheduleAssignmentService.repository
-            .createQueryBuilder(wsaAlias)
-            .andWhere(`${wsaAlias}.isDeleted = :isDeleted
-          AND ${wsaAlias}.companyId = :companyId
-          AND ${wsaAlias}.workScheduleId != :workScheduleId
+        const { companyId, endDate, startDate } = params;
+        const wsAlias = database_1.ETableName.WORK_SCHEDULE;
+        const workSchedule = this.workScheduleRepository
+            .createQueryBuilder(wsAlias)
+            .andWhere(`${wsAlias}.isDeleted = :isDeleted
+          AND ${wsAlias}.companyId = :companyId
           AND (
-            (${wsaAlias}.date <= :endDate AND ${wsaAlias}.date >= :startDate)
+            (${wsAlias}.endDate <= :endDate AND ${wsAlias}.startDate >= :startDate)
           )
-          `, { isDeleted: false, companyId, workScheduleId, startDate, endDate })
-            .groupBy(`${wsaAlias}.workScheduleId`)
-            .select([`${wsaAlias}.workScheduleId`])
-            .getRawMany();
-        if (!workScheduleAssignments.length)
-            return [];
-        const workScheduleIds = workScheduleAssignments.map(({ work_schedule_assignment_work_schedule_id: id }) => +id);
-        return this.workScheduleRepository.find({
-            where: { id: (0, typeorm_2.In)(workScheduleIds) },
-            select: {
-                id: true,
-                name: true,
-                startDate: true,
-                endDate: true,
-                color: true,
-            },
-        });
+          AND ${wsAlias}.state = :state
+          `, {
+            isDeleted: false,
+            companyId,
+            startDate,
+            endDate,
+            state: work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED,
+        })
+            .select([
+            `${wsAlias}.id`,
+            `${wsAlias}.name`,
+            `${wsAlias}.startDate`,
+            `${wsAlias}.endDate`,
+            `${wsAlias}.color`,
+            `${wsAlias}.default`,
+        ])
+            .getMany();
+        return workSchedule;
     }
     async getWorkScheduleDefaultByCompanyId(companyId) {
         const workSchedule = await this.workScheduleRepository.findOne({

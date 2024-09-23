@@ -103,28 +103,20 @@ export declare class ProjectController {
     getAllEmployeeAssigneesByProjectId({ companyId }: BaseParamDto, projectId: string, { timeTrackerCompanyId }: TimeTrackerMapping, paginationQueryDto: AssigneesProjectQueryDto): Promise<{
         data: {
             id: string;
-            createdOn: string;
-            employeeId: string;
-            projectId: string;
-            employee: {
-                id: string;
-                roleName: string;
-                email: string;
-                firstName: string;
-                lastName: string;
-            };
+            roleName: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+            groupId?: string;
+            groupName?: string;
         }[] | {
-            employeeId: number | undefined;
-            employee: {
-                id: number | undefined;
-                roleName: string;
-                email: string;
-                firstName: string;
-                lastName: string;
-            };
-            id: string;
-            createdOn: string;
-            projectId: string;
+            id: number | undefined;
+            roleName: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+            groupId?: string;
+            groupName?: string;
         }[];
         page: number;
         take: number;

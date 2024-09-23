@@ -51,7 +51,7 @@ let TimeEntryController = class TimeEntryController {
         return result;
     }
     async getTimeEntriesOverviewSummarize({ companyId }, { timeTrackerCompanyId }, query) {
-        const result = await this.timeEntryService.handleSummarizOverviewTimeEntries(companyId, timeTrackerCompanyId, query);
+        const result = await this.timeEntryService.handleSummarizeOverviewTimeEntries(companyId, timeTrackerCompanyId, query);
         return result;
     }
     async getTimeEntriesOverview({ companyId }, { timeTrackerCompanyId }, query) {

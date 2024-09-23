@@ -20,6 +20,8 @@ export interface ITimeEntryOverviewData {
         id: number;
         firstName: string;
         lastName: string;
+        employeeRef?: string;
+        email?: string;
     };
     group: {
         id: string;

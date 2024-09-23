@@ -16,7 +16,6 @@ import { GroupMappingService } from '../group-mapping/group-mapping.service';
 import { LocationWorkScheduleService } from '../location-work-schedule/location-work-schedule.service';
 import { WorkScheduleAssignmentService } from '../work-schedule-assignment/work-schedule-assignment.service';
 import { CheckInDefaultWorkScheduleDto, CreateWorkScheduleBodyDTO, GetAllWorkScheduleInMultipleDateQueryDto, GetAssigneesQueryDto, UpdateWorkScheduleBodyDTO, WorkScheduleQueryDto } from './dtos';
-import { WorkSchedulesOverlapResponse } from './dtos/work-schedules-overlap.dto';
 import { EWorkSchedulePublishType } from './enums/work-schedule-publish-type.enum';
 import { EWorkScheduleState } from './enums/work-schedule-state.enum';
 import { IWorkScheduleAssignee } from './interfaces/work-schedule-assignee.interface';
@@ -248,7 +247,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         startDate: string;
         endDate: string;
         workScheduleId: number;
-    }): Promise<WorkSchedulesOverlapResponse[]>;
+    }): Promise<WorkScheduleEntity[]>;
     getWorkScheduleDefaultByCompanyId(companyId: number): Promise<WorkScheduleEntity | null>;
     handleGetWorkScheduleOfEmployeeFromToDate({ employeeId, companyId, startDate, endDate, query, }: {
         employeeId: number;

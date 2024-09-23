@@ -719,6 +719,20 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
         }, { useMasterApiKey: true });
         return data;
     }
+    async getEmployeeRefAndEmailUsingEIds(Ids) {
+        const listEmployee = this.employeeRepository.find({
+            select: {
+                id: true,
+                email: true,
+                employeeRef: true,
+            },
+            where: {
+                id: (0, typeorm_2.In)(Ids),
+                isDeleted: false,
+            },
+        });
+        return listEmployee;
+    }
 };
 exports.TimeTrackerEmployeeService = TimeTrackerEmployeeService;
 exports.TimeTrackerEmployeeService = TimeTrackerEmployeeService = __decorate([

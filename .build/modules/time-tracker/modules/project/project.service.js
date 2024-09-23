@@ -222,20 +222,18 @@ let ProjectService = class ProjectService {
         });
         if (data) {
             const { data: assignees } = data;
-            const ttEmployeeIds = assignees?.map(assignee => assignee.employeeId);
+            const ttEmployeeIds = assignees?.map(assignee => assignee.id);
             const employeeMappings = await this.employeeMappingService.getManyEmployeeMappingByTTIds({
                 ttEmployeeIds,
                 companyId,
             });
             const ttEmployeesMap = new Map(employeeMappings.map(e => [e.timeTrackerEmployeeId, e.employeeId]));
-            const result = assignees?.map(assignee => ({
-                ...assignee,
-                employeeId: ttEmployeesMap.get(assignee.employeeId),
-                employee: {
-                    ...assignee.employee,
-                    id: ttEmployeesMap.get(assignee.employeeId),
-                },
-            }));
+            const result = assignees?.map(assignee => {
+                return {
+                    ...assignee,
+                    id: ttEmployeesMap.get(assignee.id),
+                };
+            });
             return {
                 ...data,
                 data: result ? result : assignees,

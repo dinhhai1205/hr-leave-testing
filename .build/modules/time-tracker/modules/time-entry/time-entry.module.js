@@ -20,6 +20,7 @@ const employee_module_1 = require("../../../user/modules/employee/employee.modul
 const timesheet_adjustment_module_1 = require("../timesheet-adjustment/timesheet-adjustment.module");
 const prtrx_hdr_module_1 = require("../../../payroll/modules/prtrx-hdr/prtrx-hdr.module");
 const time_entry_ess_controller_1 = require("./time-entry-ess.controller");
+const employee_module_2 = require("../employee/employee.module");
 let TimeEntryModule = class TimeEntryModule {
 };
 exports.TimeEntryModule = TimeEntryModule;
@@ -35,6 +36,7 @@ exports.TimeEntryModule = TimeEntryModule = __decorate([
             timesheet_adjustment_module_1.TimeSheetAdjustmentModule,
             employee_module_1.EmployeeModule,
             prtrx_hdr_module_1.PrtrxHdrModule,
+            employee_module_2.TimeTrackerEmployeeModule,
         ],
         controllers: [time_entry_controller_1.TimeEntryController, time_entry_ess_controller_1.TimeEntryESSController],
         providers: [
