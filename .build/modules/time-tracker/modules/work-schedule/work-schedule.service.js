@@ -2006,19 +2006,19 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         let filteredAssignees = assigneesArray;
         if (q) {
             const lowerQ = q.toLowerCase();
-            filteredAssignees = assigneesArray.filter(assignee => assignee.email.toLowerCase().includes(lowerQ) ||
-                assignee.fullNameLocal.toLowerCase().includes(lowerQ) ||
-                (assignee.fullNameEn &&
-                    assignee.fullNameEn.toLowerCase().includes(lowerQ)));
+            filteredAssignees = assigneesArray?.filter(assignee => assignee?.email?.toLowerCase().includes(lowerQ) ||
+                assignee?.fullNameLocal?.toLowerCase().includes(lowerQ) ||
+                (assignee?.fullNameEn &&
+                    assignee?.fullNameEn?.toLowerCase().includes(lowerQ)));
         }
         if (ids && ids.length > 0) {
-            filteredAssignees = filteredAssignees.filter(assignee => ids.includes(assignee.employeeId));
+            filteredAssignees = filteredAssignees?.filter(assignee => ids.includes(assignee?.employeeId));
         }
         if (order === enums_1.EOrder.ASC) {
-            assigneesArray.sort((a, b) => a.employeeId - b.employeeId);
+            assigneesArray?.sort((a, b) => a.employeeId - b.employeeId);
         }
         else {
-            assigneesArray.sort((a, b) => b.employeeId - a.employeeId);
+            assigneesArray?.sort((a, b) => b.employeeId - a.employeeId);
         }
         const getPage = page || 1;
         const getTake = take || 20;
@@ -2167,9 +2167,9 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             orgIds,
         });
         orgAndSubOrgs.forEach(org => {
-            const matchingAssignee = groupAssigneesArray.find(assignee => assignee.id === org.id);
+            const matchingAssignee = groupAssigneesArray?.find(assignee => assignee.id === org.id);
             if (!matchingAssignee) {
-                groupAssigneesArray.push({
+                groupAssigneesArray?.push({
                     orgPath: org.orgPath,
                     id: org.id,
                     name: org.name,
@@ -2181,16 +2181,16 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         let filteredGroupAssignees = groupAssigneesArray;
         if (q) {
             const lowerQ = q.toLowerCase();
-            filteredGroupAssignees = groupAssigneesArray?.filter(groupAssignee => groupAssignee.name.toLowerCase().includes(lowerQ));
+            filteredGroupAssignees = groupAssigneesArray?.filter(groupAssignee => groupAssignee?.name?.toLowerCase().includes(lowerQ));
         }
         if (ids && ids.length > 0) {
             filteredGroupAssignees = filteredGroupAssignees?.filter(groupAssignee => ids.includes(groupAssignee.id));
         }
         if (order === enums_1.EOrder.ASC) {
-            filteredGroupAssignees.sort((a, b) => a.id - b.id);
+            filteredGroupAssignees?.sort((a, b) => a.id - b.id);
         }
         else {
-            filteredGroupAssignees.sort((a, b) => b.id - a.id);
+            filteredGroupAssignees?.sort((a, b) => b.id - a.id);
         }
         const getPage = page || 1;
         const getTake = take || 20;

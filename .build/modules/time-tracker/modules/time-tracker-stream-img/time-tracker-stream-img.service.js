@@ -22,6 +22,9 @@ let TimeTrackerStreamImgService = class TimeTrackerStreamImgService {
             const res = await (0, axios_1.default)({
                 method: 'GET',
                 url: `${process.env.TIME_TRACKER_API_URL || 'http://13.250.15.175'}/${keyEncode}`,
+                headers: {
+                    'tt-authentication': `${process.env.TIME_TRACKER_API_KEY}`,
+                },
                 responseType: 'arraybuffer',
             });
             const base64 = Buffer.from(res.data, 'binary').toString('base64');
