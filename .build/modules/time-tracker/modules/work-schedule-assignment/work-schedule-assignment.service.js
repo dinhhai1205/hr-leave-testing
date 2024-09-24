@@ -591,6 +591,7 @@ let WorkScheduleAssignmentService = class WorkScheduleAssignmentService extends 
             `${dayScheduleAlias}.id`,
             `${dayScheduleAlias}.from`,
             `${dayScheduleAlias}.to`,
+            `${dayScheduleAlias}.day`,
         ])
             .where(`${workScheduleAssignmentAlias}.isDeleted = :isDeleted`, {
             isDeleted: false,

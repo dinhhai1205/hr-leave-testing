@@ -74,7 +74,7 @@ export declare class WorkScheduleController {
     }>;
     create(createWorkScheduleBodyDTO: CreateWorkScheduleBodyDTO, { companyId }: BaseParamDto, { timeTrackerCompanyId, userEmail }: TimeTrackerMapping, { userEmail: leaveUserEmail }: IActiveUserData): Promise<any>;
     update(workScheduleId: number, updateWorkScheduleBodyDTO: UpdateWorkScheduleBodyDTO, { companyId }: BaseParamDto, { timeTrackerCompanyId, userEmail }: TimeTrackerMapping, { userEmail: leaveUserEmail }: IActiveUserData): Promise<{
-        updatedWorkSchedule: import("../../../../core/database").WorkScheduleEntity;
+        updatedWorkSchedule: import("typeorm").UpdateResult;
         autoDeductionEntity: import("../../../../core/database").AutoDeductionEntity[] | import("../../../../core/database").BreakRuleEntity[] | import("../../../../core/database").DayScheduleEntity[];
         dayScheduleEntity: import("../../../../core/database").AutoDeductionEntity[] | import("../../../../core/database").BreakRuleEntity[] | import("../../../../core/database").DayScheduleEntity[];
         breakRuleEntity: import("../../../../core/database").AutoDeductionEntity[] | import("../../../../core/database").BreakRuleEntity[] | import("../../../../core/database").DayScheduleEntity[];

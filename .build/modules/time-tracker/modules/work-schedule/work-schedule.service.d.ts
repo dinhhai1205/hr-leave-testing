@@ -49,7 +49,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
     getTTWorkScheduleByCompanyId(companyId: string): Promise<any>;
     handleCreateWorkSchedule(createWorkScheduleBodyDTO: CreateWorkScheduleBodyDTO, companyId: number, userEmail: string, timeTrackerCompanyId: string): Promise<any>;
     handleUpdateWorkSchedule(workScheduleId: number, companyId: number, timeTrackerCompanyId: string, userEmail: string, updateWorkScheduleBodyDTO: UpdateWorkScheduleBodyDTO): Promise<{
-        updatedWorkSchedule: WorkScheduleEntity;
+        updatedWorkSchedule: import("typeorm").UpdateResult;
         autoDeductionEntity: AutoDeductionEntity[] | BreakRuleEntity[] | DayScheduleEntity[];
         dayScheduleEntity: AutoDeductionEntity[] | BreakRuleEntity[] | DayScheduleEntity[];
         breakRuleEntity: AutoDeductionEntity[] | BreakRuleEntity[] | DayScheduleEntity[];
@@ -57,7 +57,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
     deleteWorkSchedule(workScheduleId: number, companyId: number, timeTrackerCompanyId: string, userEmail: string, optionDelete: string): Promise<string>;
     deleteWorkScheduleLeave(workScheduleId: number, companyId: number, userEmail: string, optionDelete: string): Promise<WorkScheduleEntity>;
     createWorkSchedule(companyId: number, userEmail: string, workScheduleDTO: Pick<CreateWorkScheduleBodyDTO, 'name' | 'workArrangement' | 'breakType' | 'default' | 'unitTime' | 'weeklyHours' | 'utcOffset' | 'ttWorkScheduleId' | 'overtime' | 'color' | 'state'>): Promise<WorkScheduleEntity>;
-    updateWorkSchedule(companyId: number, userEmail: string, id: number, workScheduleDTO: Pick<UpdateWorkScheduleBodyDTO, 'name' | 'workArrangement' | 'breakType' | 'default' | 'unitTime' | 'weeklyHours' | 'overtime' | 'utcOffset' | 'color'>): Promise<WorkScheduleEntity>;
+    updateWorkSchedule(companyId: number, userEmail: string, id: number, workScheduleDTO: Pick<UpdateWorkScheduleBodyDTO, 'name' | 'workArrangement' | 'breakType' | 'default' | 'unitTime' | 'weeklyHours' | 'overtime' | 'utcOffset' | 'color' | 'excludeEarlyClockIn'>): Promise<import("typeorm").UpdateResult>;
     getWorkScheduleOfDate(employeeId: number, companyId: number, date: string): Promise<WorkScheduleEntity | null>;
     getWorkScheduleOfMultipleDates(employeeId: number, companyId: number, dates: string[]): Promise<Record<string, WorkScheduleEntity>>;
     getBreakListByEmployeeId(employeeId: number, companyId: number, date: string, paginationQueryDto: PaginationQueryDto): Promise<PaginationResponseDto<BreakRuleEntity>>;
@@ -99,7 +99,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         locationEntity: void[] | import("../location-work-schedule/dtos").LocationWorkScheduleDto[];
     }>;
     handleUpdateWorkScheduleLeave(workScheduleId: number, companyId: number, userEmail: string, updateWorkScheduleBodyDTO: UpdateWorkScheduleBodyDTO): Promise<{
-        updatedWorkSchedule: WorkScheduleEntity;
+        updatedWorkSchedule: import("typeorm").UpdateResult;
         autoDeductionEntity: AutoDeductionEntity[] | BreakRuleEntity[] | DayScheduleEntity[];
         dayScheduleEntity: AutoDeductionEntity[] | BreakRuleEntity[] | DayScheduleEntity[];
         breakRuleEntity: AutoDeductionEntity[] | BreakRuleEntity[] | DayScheduleEntity[];

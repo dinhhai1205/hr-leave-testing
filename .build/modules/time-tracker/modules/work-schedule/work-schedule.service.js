@@ -285,7 +285,6 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         const autoDeductionDTOs = updateWorkScheduleBodyDTO.autoDeductions;
         const breakRuleDTOs = updateWorkScheduleBodyDTO.breaks;
         const daySchedulesDTOs = updateWorkScheduleBodyDTO.daySchedules;
-        console.log({ daySchedulesDTOs });
         const autoDeductionsDeleted = updateWorkScheduleBodyDTO.autoDeductionsDeleted;
         const breaksDeleted = updateWorkScheduleBodyDTO.breaksDeleted;
         const daySchedulesDeleted = updateWorkScheduleBodyDTO.daySchedulesDeleted;
@@ -512,15 +511,21 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         }, { userEmail: userEmail });
     }
     async updateWorkSchedule(companyId, userEmail, id, workScheduleDTO) {
-        const payload = {
-            ...workScheduleDTO,
-            endWorkDayAt: workScheduleDTO.overtime.endWorkDayAt,
-            utcOffset: workScheduleDTO.utcOffset,
-        };
-        return this.update(id, {
-            ...workScheduleDTO,
-            endWorkDayAt: workScheduleDTO.overtime.endWorkDayAt,
-        }, { userEmail: userEmail, companyId: companyId });
+        const { name, workArrangement, breakType, default: defaultDto, unitTime, weeklyHours, excludeEarlyClockIn, utcOffset, color, } = workScheduleDTO;
+        return this.workScheduleRepository.update(id, {
+            name,
+            workArrangement,
+            breakType,
+            default: defaultDto,
+            unitTime,
+            weeklyHours,
+            companyId,
+            color,
+            updatedBy: userEmail,
+            excludeEarlyClockIn,
+            utcOffset: utcOffset,
+            updatedOn: moment.utc().toDate(),
+        });
     }
     async getWorkScheduleOfDate(employeeId, companyId, date) {
         const workScheduleAssignment = await this.workScheduleAssignmentService.getWorkScheduleAssignmentsByEmployeeIdWithDate(employeeId, companyId, date);
@@ -1939,7 +1944,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 this.cancelScheduleExpiredJob(workSchedule.id);
             }
             catch (error) {
-                console.log(error);
+                console.error(error);
             }
         }
         if (isUnpublished) {
@@ -2497,10 +2502,8 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 date: listDays,
                 employeeIds,
             });
-            console.log({ listWorkSchedules });
             const result = listDays.map(day => {
                 const workScheduleEntity = listWorkSchedules[day];
-                console.log({ workScheduleEntity });
                 const workScheduleMap = workScheduleEntity?.map(ws => {
                     const assignees = ws.assignees;
                     const groupAssignees = ws.groupAssignees;
@@ -2656,26 +2659,41 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
     }
     async getDetailESSWorkSchedule(args) {
         const { companyId, workScheduleId } = args;
-        const workScheduleDetail = await this.workScheduleRepository.findOne({
-            where: {
-                companyId,
-                id: workScheduleId,
-                isDeleted: false,
-            },
-            relations: ['daySchedules'],
-            select: [
-                'id',
-                'name',
-                'color',
-                'startDate',
-                'endDate',
-                'isDeleted',
-                'assignees',
-                'groupAssignees',
-                'daySchedules',
-                'utcOffset',
-            ],
+        const workScheduleAlias = database_1.ETableName.WORK_SCHEDULE;
+        const daySchedulesAlias = database_1.ETableName.DAY_SCHEDULE;
+        const queryBuilder = this.workScheduleRepository
+            .createQueryBuilder(workScheduleAlias)
+            .select([
+            `${workScheduleAlias}.id`,
+            `${workScheduleAlias}.name`,
+            `${workScheduleAlias}.color`,
+            `${workScheduleAlias}.startDate`,
+            `${workScheduleAlias}.endDate`,
+            `${workScheduleAlias}.isDeleted`,
+            `${workScheduleAlias}.assignees`,
+            `${workScheduleAlias}.groupAssignees`,
+            `${workScheduleAlias}.default`,
+            `${workScheduleAlias}.utcOffset`,
+            `${daySchedulesAlias}.id`,
+            `${daySchedulesAlias}.isDeleted`,
+            `${daySchedulesAlias}.createdBy`,
+            `${daySchedulesAlias}.createdOn`,
+            `${daySchedulesAlias}.updatedBy`,
+            `${daySchedulesAlias}.updatedOn`,
+            `${daySchedulesAlias}.day`,
+            `${daySchedulesAlias}.from`,
+            `${daySchedulesAlias}.to`,
+            `${daySchedulesAlias}.duration`,
+            `${daySchedulesAlias}.unitTime`,
+            `${daySchedulesAlias}.companyId`,
+            `${daySchedulesAlias}.workScheduleId`,
+        ])
+            .leftJoinAndSelect(`${workScheduleAlias}.daySchedules`, daySchedulesAlias, `${daySchedulesAlias}.isDeleted = :isDeleted AND ${daySchedulesAlias}.work_schedule_id = :workScheduleId`, { isDeleted: false, workScheduleId })
+            .andWhere(`${workScheduleAlias}.companyId = :companyId`, { companyId })
+            .andWhere(`${workScheduleAlias}.isDeleted = :isDeleted`, {
+            isDeleted: false,
         });
+        const workScheduleDetail = await queryBuilder.getOne();
         if (!workScheduleDetail) {
             return null;
         }
@@ -2796,7 +2814,18 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             .map(id => parseInt(id, 10))
             .filter(Boolean)
             .reverse() || [];
-        const allWorkSchedules = await this.workScheduleRepository.find({
+        const workScheduleAlias = database_1.ETableName.WORK_SCHEDULE;
+        const allWorkSchedules = await this.getWorkScheduleQueryBuilder({
+            query: `${workScheduleAlias}.isDeleted = :isDeleted
+      AND ${workScheduleAlias}.companyId = :companyId
+      AND ${workScheduleAlias}.state = :state`,
+            parameters: {
+                companyId,
+                isDeleted: false,
+                state: work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED,
+            },
+        }).getMany();
+        await this.workScheduleRepository.find({
             where: {
                 isDeleted: false,
                 companyId,
@@ -2862,11 +2891,21 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         const workScheduleAlias = database_1.ETableName.WORK_SCHEDULE;
         const groupWorkSchedules = (await this.getAllGroupWorkScheduleOfEmployee(employeeId, companyId)) ||
             [];
-        const assignedWorkSchedules = await this.getWorkScheduleQueryBuilder({
-            query: `${workScheduleAlias}.assignees::jsonb ? :employeeId
+        let query = '';
+        if ((0, database_1.databaseType)() === database_1.EDbSqlType.Postgres) {
+            query = `${workScheduleAlias}.assignees::jsonb ? :employeeId
         AND ${workScheduleAlias}.isDeleted = :isDeleted
         AND ${workScheduleAlias}.companyId = :companyId
-        AND ${workScheduleAlias}.state = :state`,
+        AND ${workScheduleAlias}.state = :state`;
+        }
+        else if ((0, database_1.databaseType)() === database_1.EDbSqlType.Mssql) {
+            query = `JSON_VALUE(${workScheduleAlias}.assignees, '$."employeeId"') = :employeeId
+        AND ${workScheduleAlias}.isDeleted = :isDeleted
+        AND ${workScheduleAlias}.companyId = :companyId
+        AND ${workScheduleAlias}.state = :state`;
+        }
+        const assignedWorkSchedules = await this.getWorkScheduleQueryBuilder({
+            query,
             parameters: {
                 employeeId: employeeId.toString(),
                 companyId,

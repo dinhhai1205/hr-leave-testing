@@ -785,7 +785,7 @@ let PayrollTimeSheetServiceV2 = class PayrollTimeSheetServiceV2 extends database
             .leftJoinAndSelect(`${employeeAlias}.payrollGroups`, payrollGroupAlias, `${payrollGroupAlias}.id = ${employeeAlias}.payroll_group_id AND ${payrollGroupAlias}.is_deleted = :isDeleted`, { isDeleted: false })
             .leftJoinAndSelect(`${employeeAlias}.costCenter`, costCenterAlias, `${costCenterAlias}.id = ${employeeAlias}.cost_center_id AND ${costCenterAlias}.is_deleted = :isDeleted`, { isDeleted: false })
             .leftJoinAndSelect(`${employeeAlias}.prtrxEmps`, prtrxEmpAlias, `${prtrxEmpAlias}.employee_id = ${employeeAlias}.id AND ${prtrxEmpAlias}.is_deleted = :isDeleted`, { isDeleted: false })
-            .where(`${payrollAlias}.company_id = :companyId AND ${payrollAlias}.is_deleted = :isDeleted AND ${payrollAlias}.prtrx_hdr_id = :prtrxHdrId AND ${employeeAlias}.pay_calc_met = :calculationMethod AND ${prtrxEmpAlias}.included = :included`, {
+            .where(`${payrollAlias}.company_id = :companyId AND ${payrollAlias}.is_deleted = :isDeleted AND ${payrollAlias}.prtrx_hdr_id = :prtrxHdrId AND ${employeeAlias}.pay_calc_met = :calculationMethod AND ${prtrxEmpAlias}.included = :included AND ${prtrxEmpAlias}.payroll_trx_header_id = :prtrxHdrId`, {
             companyId: companyId,
             isDeleted: false,
             prtrxHdrId: payrollHeaderId,
@@ -881,7 +881,7 @@ let PayrollTimeSheetServiceV2 = class PayrollTimeSheetServiceV2 extends database
             .leftJoinAndSelect(`${employeeAlias}.payrollGroups`, payrollGroupAlias, `${payrollGroupAlias}.id = ${employeeAlias}.payroll_group_id AND ${payrollGroupAlias}.is_deleted = :isDeleted`, { isDeleted: false })
             .leftJoinAndSelect(`${employeeAlias}.costCenter`, costCenterAlias, `${costCenterAlias}.id = ${employeeAlias}.cost_center_id AND ${costCenterAlias}.is_deleted = :isDeleted`, { isDeleted: false })
             .leftJoinAndSelect(`${employeeAlias}.prtrxEmps`, prtrxEmpAlias, `${employeeAlias}.id = ${prtrxEmpAlias}.employee_id AND ${prtrxEmpAlias}.is_deleted = :isDeleted`, { isDeleted: false })
-            .where(`${payrollAlias}.company_id = :companyId AND ${payrollAlias}.is_deleted = :isDeleted AND ${payrollAlias}.prtrx_hdr_id = :prtrxHdrId AND ${prtrxEmpAlias}.included = :included`, {
+            .where(`${payrollAlias}.company_id = :companyId AND ${payrollAlias}.is_deleted = :isDeleted AND ${payrollAlias}.prtrx_hdr_id = :prtrxHdrId AND ${prtrxEmpAlias}.included = :included AND ${prtrxEmpAlias}.payroll_trx_header_id = :prtrxHdrId`, {
             companyId: companyId,
             isDeleted: false,
             prtrxHdrId: payrollHeaderId,
@@ -902,6 +902,7 @@ let PayrollTimeSheetServiceV2 = class PayrollTimeSheetServiceV2 extends database
                 }
             }));
         }
+        console.log('>>>', queryBuilder.getSql());
         if (remainingQuerySearchFields?.length && querySearchString) {
             rawResult = await this.getEntitiesByQuery({
                 queryBuilder,
