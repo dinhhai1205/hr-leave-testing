@@ -6,8 +6,8 @@ import { HrforteNotificationProducer, LeaveWorkScheduleAssignmentProducer } from
 import { EmployeeService } from '../../../user/modules/employee/employee.service';
 import { EWorkSchedulePublishType } from '../work-schedule/enums/work-schedule-publish-type.enum';
 import { EWorkScheduleState } from '../work-schedule/enums/work-schedule-state.enum';
-import { WorkAssignmentQueryDto, WorkScheduleAssignmentDto } from './dtos';
 import { WorkScheduleService } from '../work-schedule/work-schedule.service';
+import { WorkAssignmentQueryDto, WorkScheduleAssignmentDto } from './dtos';
 export declare class WorkScheduleAssignmentService extends TypeOrmBaseService<WorkScheduleAssignmentEntity> {
     private readonly workScheduleAssignmentRepository;
     private readonly workScheduleAssignmentProducer;
@@ -61,14 +61,25 @@ export declare class WorkScheduleAssignmentService extends TypeOrmBaseService<Wo
         isExistedAnyRelatedActions: boolean;
         relatedAction: string;
     }>;
+    private formatTime;
+    private paginateResults;
     getWorkScheduleAssignmentByCompanyId(args: {
         companyId: number;
         query: WorkAssignmentQueryDto;
-    }): Promise<{}>;
-    private processAssignments;
-    private getScheduleForDate;
-    private formatTime;
-    private paginateResults;
+    }): Promise<{
+        page: number;
+        take: number;
+        itemCount: number;
+        pageCount: number;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+        data: any[];
+    }>;
+    private processWorkSchedules;
+    private formatEmployeeSchedules;
+    private generateDaySchedules;
+    private findApplicableSchedule;
+    private mapDayOfWeek;
     private handleSearchAssignment;
     private checkIsInWorkScheduleDefault;
     publishWorkScheduleAssignment(params: {

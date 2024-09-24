@@ -92,4 +92,9 @@ export declare class WorkScheduleController {
     } & import("../../../../core/database").WorkScheduleEntity>;
     unpublishWorkSchedule(companyId: number, workScheduleId: number, { timeTrackerCompanyId }: TimeTrackerMapping, userEmail?: string): Promise<string>;
     updateWorkScheduleDefault(workScheduleId: number, { companyId }: BaseParamDto, { timeTrackerCompanyId, userEmail }: TimeTrackerMapping, { userEmail: leaveUserEmail }: IActiveUserData): Promise<string>;
+    test({ companyId }: BaseParamDto, { employeeId, startDate, endDate, }: {
+        employeeId: number;
+        startDate: string;
+        endDate: string;
+    }): Promise<Record<string, import("../../../../core/database").WorkScheduleEntity>>;
 }

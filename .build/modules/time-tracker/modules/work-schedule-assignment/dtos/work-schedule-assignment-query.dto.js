@@ -13,6 +13,7 @@ exports.WorkAssignmentQueryDto = void 0;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const work_schedule_state_enum_1 = require("../../work-schedule/enums/work-schedule-state.enum");
+const decorators_1 = require("../../../../../common/decorators");
 class WorkAssignmentQueryDto {
 }
 exports.WorkAssignmentQueryDto = WorkAssignmentQueryDto;
@@ -28,12 +29,16 @@ __decorate([
 ], WorkAssignmentQueryDto.prototype, "state", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, decorators_1.TransformArrayStringToNumbers)(),
+    (0, class_validator_1.IsInt)({ each: true }),
+    (0, class_validator_1.Min)(1, { each: true }),
     __metadata("design:type", Array)
 ], WorkAssignmentQueryDto.prototype, "workScheduleIds", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, decorators_1.TransformArrayStringToNumbers)(),
+    (0, class_validator_1.IsInt)({ each: true }),
+    (0, class_validator_1.Min)(1, { each: true }),
     __metadata("design:type", Array)
 ], WorkAssignmentQueryDto.prototype, "employeeIds", void 0);
 __decorate([

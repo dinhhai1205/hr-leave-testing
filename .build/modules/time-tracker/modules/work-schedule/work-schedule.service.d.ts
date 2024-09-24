@@ -1,7 +1,7 @@
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { Repository } from 'typeorm';
+import { PaginationQueryDto, PaginationResponseDto } from '../../../../common/dto';
 import { AutoDeductionEntity, BreakRuleEntity, DayScheduleEntity, EmployeeEntity, LocationEntity, TypeOrmBaseService, WorkScheduleEntity } from '../../../../core/database';
-import { WorkScheduleAssignmentEntity } from '../../../../core/database/entities/work-schedule-assignment.entity';
 import { HrforteNotificationProducer, LeaveWorkScheduleProducer } from '../../../../core/queue/producers';
 import { EmployeeService } from '../../../../modules/user/modules/employee/employee.service';
 import { OrganizationStructureService } from '../../../general/modules/organization-structure/organization-structure.service';
@@ -20,9 +20,8 @@ import { EWorkSchedulePublishType } from './enums/work-schedule-publish-type.enu
 import { EWorkScheduleState } from './enums/work-schedule-state.enum';
 import { IWorkScheduleAssignee } from './interfaces/work-schedule-assignee.interface';
 import { IWorkScheduleGroupAssignee } from './interfaces/work-schedule-group-assignee.interface';
-import { PaginationQueryDto, PaginationResponseDto } from '../../../../common/dto';
-import { GetWorkScheduleArguments, GetWorkScheduleOptions } from './work-schedule.type';
 import { AppConfig } from '../../../../config';
+import { GetWorkScheduleArguments, GetWorkScheduleOptions } from './work-schedule.type';
 export declare class WorkScheduleService extends TypeOrmBaseService<WorkScheduleEntity> {
     private readonly apiService;
     private readonly workScheduleRepository;
@@ -362,7 +361,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         breaks: BreakRuleEntity[];
         locationWorkSchedules: import("../../../../core/database").LocationWorkScheduleEntity[];
         daySchedules: DayScheduleEntity[];
-        workScheduleAssignment: WorkScheduleAssignmentEntity[];
+        workScheduleAssignment: import("../../../../core/database/entities/work-schedule-assignment.entity").WorkScheduleAssignmentEntity[];
         employees: EmployeeEntity[];
         workScheduleTags: import("../../../../core/database").WorkScheduleTagEntity[];
         organizationStructures: import("../../../../core/database").OrganizationStructureEntity[];
@@ -405,4 +404,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         startDate: string;
         endDate?: string;
     }): Promise<Record<string, WorkScheduleEntity>>;
+    getAllWorkSchedulePublishedForWsAssignment(companyId: number): Promise<Array<WorkScheduleEntity & {
+        listOrganizationPaths: string[];
+    }>>;
 }
