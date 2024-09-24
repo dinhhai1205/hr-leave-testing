@@ -1045,6 +1045,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 ttWorkScheduleId: true,
                 id: true,
                 state: true,
+                name: true,
             },
         });
         return workSchedules;
@@ -1062,6 +1063,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             `${workScheduleAlias}.groupAssignees`,
             `${workScheduleAlias}.default`,
             `${workScheduleAlias}.ttWorkScheduleId`,
+            `${workScheduleAlias}.state`,
         ])
             .where(`${workScheduleAlias}.id IN (:...ids)`, { ids })
             .andWhere(`${workScheduleAlias}.companyId = :companyId`, { companyId })

@@ -609,6 +609,23 @@ let GroupService = class GroupService {
             }, {});
             await this.workScheduleService.updateAddGroupAssigneesOfWorkSchedule(workScheduleId, assigneeGroupsDto, companyId, userEmail);
         }
+        if (workSchedule.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED) {
+            const orgPaths = groups?.map(group => group.orgPath);
+            const employees = await this.getAllEmployeesInGroupAndSubGroups(companyId, orgPaths);
+            const assigneeIds = employees.map(e => e.id);
+            const { startDate, endDate, name } = workSchedule;
+            if (assigneeIds.length > 0) {
+                await this.workScheduleService.sendWorkScheduleNotification({
+                    companyId,
+                    workScheduleId,
+                    employeeIds: assigneeIds,
+                    dateFrom: startDate instanceof Date ? startDate.toISOString() : startDate,
+                    dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
+                    userEmail,
+                    verb: `has just assigned you to a published work schedule "${name}". Check it out now!`,
+                });
+            }
+        }
         const ttGroupIds = groupMappings.map(g => g.timeTrackerGroupId);
         const ttWorkScheduleId = workSchedule.ttWorkScheduleId;
         await this.apiService.request({
@@ -663,6 +680,23 @@ let GroupService = class GroupService {
             }, {});
             await this.workScheduleService.updateAddGroupAssigneesOfWorkSchedule(workScheduleId, assigneeGroupsDto, companyId, userEmail);
         }
+        if (workSchedule.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED) {
+            const orgPaths = groups?.map(group => group.orgPath);
+            const employees = await this.getAllEmployeesInGroupAndSubGroups(companyId, orgPaths);
+            const assigneeIds = employees.map(e => e.id);
+            const { startDate, endDate, name } = workSchedule;
+            if (assigneeIds?.length > 0) {
+                await this.workScheduleService.sendWorkScheduleNotification({
+                    companyId,
+                    workScheduleId,
+                    employeeIds: assigneeIds,
+                    dateFrom: startDate instanceof Date ? startDate.toISOString() : startDate,
+                    dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
+                    userEmail,
+                    verb: `has just assigned you to a published work schedule "${name}". Check it out now!`,
+                });
+            }
+        }
         return {
             message: 'Assign work schedule to groups successfully',
             orgIds,
@@ -692,7 +726,43 @@ let GroupService = class GroupService {
             }, {});
             await Promise.all(Object.keys(workScheduleAssigneeMap).map(workScheduleId => this.workScheduleService.updateRemoveGroupAssigneesOfWorkSchedule(+workScheduleId, workScheduleAssigneeMap[+workScheduleId], companyId, userEmail)));
             const workScheduleIds = groupWorkSchedules?.map(groupWorkSchedule => groupWorkSchedule.workScheduleId);
-            const workSchedules = await this.workScheduleService.getTTWorkSchedulesByWorkScheduleIds(workScheduleIds, companyId);
+            const workSchedules = await this.workScheduleService.getTTWorkSchedulesByWorkScheduleIdsWithAssignees(workScheduleIds, companyId);
+            const publishedWorkSchedules = workSchedules?.filter(ws => ws.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED);
+            const orgPaths = orgs?.map(org => org.orgPath);
+            const employeesInOrgs = await this.getAllEmployeesInGroupAndSubGroups(companyId, orgPaths);
+            const employeeWorkSchedulesMap = new Map();
+            publishedWorkSchedules?.map(workSchedule => {
+                const { assignees } = workSchedule;
+                const assigneeIdsSet = new Set(Object.keys(assignees).map(employeeId => Number(employeeId)));
+                for (const employee of employeesInOrgs) {
+                    if (!assigneeIdsSet.has(employee.id)) {
+                        const key = `${employee.id}-${workSchedule.id}`;
+                        if (!employeeWorkSchedulesMap.has(key)) {
+                            employeeWorkSchedulesMap.set(key, {
+                                employeeId: employee.id,
+                                workSchedule: workSchedule,
+                            });
+                        }
+                    }
+                }
+            });
+            const employeeWorkSchedulesToNotify = Array.from(employeeWorkSchedulesMap?.values());
+            const notifications = employeeWorkSchedulesToNotify?.map(({ employeeId, workSchedule }) => {
+                return this.workScheduleService.sendWorkScheduleNotification({
+                    companyId,
+                    workScheduleId: workSchedule.id,
+                    employeeIds: [employeeId],
+                    dateFrom: workSchedule?.startDate instanceof Date
+                        ? workSchedule?.startDate.toISOString()
+                        : workSchedule?.startDate,
+                    dateTo: workSchedule?.endDate instanceof Date
+                        ? workSchedule?.endDate.toISOString()
+                        : workSchedule?.endDate,
+                    userEmail,
+                    verb: `has just unassigned you from the published work schedule "${workSchedule?.name}". Check it out!`,
+                });
+            });
+            await Promise.all(notifications);
             if (orgIds.length > 0) {
                 await this.orgRepository
                     .createQueryBuilder()
@@ -772,6 +842,44 @@ let GroupService = class GroupService {
                 return acc;
             }, {});
             await Promise.all(Object.keys(workScheduleAssigneeMap).map(workScheduleId => this.workScheduleService.updateRemoveGroupAssigneesOfWorkSchedule(+workScheduleId, workScheduleAssigneeMap[+workScheduleId], companyId, userEmail)));
+            const workScheduleIds = groupWorkSchedules?.map(groupWorkSchedule => groupWorkSchedule.workScheduleId);
+            const workSchedules = await this.workScheduleService.getTTWorkSchedulesByWorkScheduleIdsWithAssignees(workScheduleIds, companyId);
+            const publishedWorkSchedules = workSchedules?.filter(ws => ws.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED);
+            const orgPaths = orgs?.map(org => org.orgPath);
+            const employeesInOrgs = await this.getAllEmployeesInGroupAndSubGroups(companyId, orgPaths);
+            const employeeWorkSchedulesMap = new Map();
+            publishedWorkSchedules?.map(workSchedule => {
+                const { assignees } = workSchedule;
+                const assigneeIdsSet = new Set(Object.keys(assignees).map(employeeId => Number(employeeId)));
+                for (const employee of employeesInOrgs) {
+                    if (!assigneeIdsSet.has(employee.id)) {
+                        const key = `${employee.id}-${workSchedule.id}`;
+                        if (!employeeWorkSchedulesMap.has(key)) {
+                            employeeWorkSchedulesMap.set(key, {
+                                employeeId: employee.id,
+                                workSchedule: workSchedule,
+                            });
+                        }
+                    }
+                }
+            });
+            const employeeWorkSchedulesToNotify = Array.from(employeeWorkSchedulesMap?.values());
+            const notifications = employeeWorkSchedulesToNotify?.map(({ employeeId, workSchedule }) => {
+                return this.workScheduleService.sendWorkScheduleNotification({
+                    companyId,
+                    workScheduleId: workSchedule.id,
+                    employeeIds: [employeeId],
+                    dateFrom: workSchedule?.startDate instanceof Date
+                        ? workSchedule?.startDate.toISOString()
+                        : workSchedule?.startDate,
+                    dateTo: workSchedule?.endDate instanceof Date
+                        ? workSchedule?.endDate.toISOString()
+                        : workSchedule?.endDate,
+                    userEmail,
+                    verb: `has just unassigned you from the published work schedule "${workSchedule.name}". Check it out!`,
+                });
+            });
+            await Promise.all(notifications);
             if (orgIds.length > 0) {
                 await this.orgRepository
                     .createQueryBuilder()

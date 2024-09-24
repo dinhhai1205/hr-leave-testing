@@ -510,6 +510,20 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
             }, {});
             await this.workScheduleService.updateAddAssigneesOfWorkSchedule(workScheduleId, assigneesDto, companyId, userEmail);
         }
+        if (workSchedule.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED) {
+            const { startDate, endDate, name } = workSchedule;
+            if (employeeIds.length > 0) {
+                await this.workScheduleService.sendWorkScheduleNotification({
+                    companyId,
+                    workScheduleId,
+                    employeeIds,
+                    dateFrom: startDate instanceof Date ? startDate.toISOString() : startDate,
+                    dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
+                    userEmail,
+                    verb: `has just assigned you to a published work schedule ${name}. Check it out now!`,
+                });
+            }
+        }
         const ttWorkScheduleId = workSchedule.ttWorkScheduleId;
         const ttEmployeeIds = employeeMapping.map(e => e.timeTrackerEmployeeId);
         if (ttEmployeeIds.length > 0) {
@@ -569,6 +583,20 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
             }, {});
             await this.workScheduleService.updateAddAssigneesOfWorkSchedule(workScheduleId, assigneesDto, companyId, userEmail);
         }
+        if (workSchedule.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED) {
+            const { startDate, endDate, name } = workSchedule;
+            if (employeeIds.length > 0) {
+                await this.workScheduleService.sendWorkScheduleNotification({
+                    companyId,
+                    workScheduleId,
+                    employeeIds,
+                    dateFrom: startDate instanceof Date ? startDate.toISOString() : startDate,
+                    dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
+                    userEmail,
+                    verb: `has just assigned you to a published work schedule ${name}. Check it out now!`,
+                });
+            }
+        }
         return {
             message: 'Assign work schedule to employees successfully',
             employeeIds,
@@ -583,6 +611,8 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
                 employeeIds: [],
             };
         }
+        const workScheduleIds = employeeWorkSchedules?.map(w => w.workScheduleId);
+        const workSchedules = await this.workScheduleService.getTTWorkSchedulesByWorkScheduleIds(workScheduleIds, companyId);
         if (employeeWorkSchedules.length > 0) {
             const workScheduleAssigneeMap = employeeWorkSchedules.reduce((acc, { workScheduleId, employeeId }) => {
                 (acc[workScheduleId] ||= []).push(employeeId);
@@ -605,6 +635,23 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
                 })
                     .execute();
             }
+            const publishedWorkSchedules = workSchedules?.filter(ws => ws.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED);
+            const notificationPromises = publishedWorkSchedules?.map(async (workSchedule) => {
+                const assigneeIds = workScheduleAssigneeMap[workSchedule.id] || [];
+                if (assigneeIds.length > 0) {
+                    const { startDate, endDate } = workSchedule;
+                    return this.workScheduleService.sendWorkScheduleNotification({
+                        companyId,
+                        workScheduleId: workSchedule.id,
+                        employeeIds: assigneeIds,
+                        dateFrom: startDate instanceof Date ? startDate.toISOString() : startDate,
+                        dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
+                        userEmail,
+                        verb: `has just unassigned you to a published work schedule "${workSchedule.name}". Check it out now!`,
+                    });
+                }
+            });
+            await Promise.all(notificationPromises);
         }
         const employeeMapping = await this.employeeMappingService.getManyEmployeeMappingByIds({
             companyId,
@@ -613,8 +660,6 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
         if (!employeeMapping || employeeMapping.length === 0) {
             throw new common_1.BadRequestException('Employees mapping not found!');
         }
-        const workScheduleIds = employeeWorkSchedules?.map(w => w.workScheduleId);
-        const workSchedules = await this.workScheduleService.getTTWorkSchedulesByWorkScheduleIds(workScheduleIds, companyId);
         const employeeIdsMapping = new Map(employeeMapping?.map(e => [e.employeeId, e.timeTrackerEmployeeId]));
         const workSchedulesMap = new Map(workSchedules?.map(workSchedule => [
             workSchedule.id,
@@ -678,6 +723,25 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
                 })
                     .execute();
             }
+            const workScheduleIds = employeeWorkSchedules?.map(w => w.workScheduleId);
+            const workSchedules = await this.workScheduleService.getTTWorkSchedulesByWorkScheduleIds(workScheduleIds, companyId);
+            const publishedWorkSchedules = workSchedules?.filter(ws => ws.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED);
+            const notificationPromises = publishedWorkSchedules?.map(async (workSchedule) => {
+                const assigneeIds = workScheduleAssigneeMap[workSchedule.id] || [];
+                if (assigneeIds.length > 0) {
+                    const { startDate, endDate } = workSchedule;
+                    return this.workScheduleService.sendWorkScheduleNotification({
+                        companyId,
+                        workScheduleId: workSchedule.id,
+                        employeeIds: assigneeIds,
+                        dateFrom: startDate instanceof Date ? startDate.toISOString() : startDate,
+                        dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
+                        userEmail,
+                        verb: `has just unassigned you to a published work schedule "${workSchedule.name}". Check it out now!`,
+                    });
+                }
+            });
+            await Promise.all(notificationPromises);
         }
         return {
             message: 'Unassign work schedule to employees successfully',
