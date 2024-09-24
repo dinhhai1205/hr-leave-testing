@@ -310,4 +310,5 @@ export declare class TimeEntryESSController {
         };
         trackedInfo: any;
     }>;
+    getTotalClockInHour(employeeId: number, { companyId }: BaseParamDto, { timeTrackerCompanyId }: TimeTrackerMapping, date: string): Promise<any>;
 }

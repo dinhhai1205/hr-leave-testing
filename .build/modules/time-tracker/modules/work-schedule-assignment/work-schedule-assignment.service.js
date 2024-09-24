@@ -465,17 +465,18 @@ let WorkScheduleAssignmentService = class WorkScheduleAssignmentService extends 
             }
         }
         await this.workScheduleAssignmentRepository.save(insertWorkScheduleAssignments);
-        await this.sendWorkScheduleNotificationAfterPublish({
+        await this.sendWorkScheduleNotification({
             employeeIds: Array.from(employeesSet),
             companyId,
             userEmail,
             dateFrom: startDate,
             dateTo: endDate,
             workScheduleId,
+            verb: `has just published a work schedule. Check it out now`
         });
     }
-    async sendWorkScheduleNotificationAfterPublish(params) {
-        const { employeeIds, companyId, userEmail, dateFrom, dateTo, workScheduleId, } = params;
+    async sendWorkScheduleNotification(params) {
+        const { employeeIds, companyId, userEmail, dateFrom, dateTo, workScheduleId, verb } = params;
         const chunkSize = 50;
         const chunks = (0, chunk_array_util_1.chunkArray)(employeeIds, chunkSize);
         for (const chunk of chunks) {
@@ -490,6 +491,7 @@ let WorkScheduleAssignmentService = class WorkScheduleAssignmentService extends 
                 dateTo,
                 employees,
                 workScheduleId,
+                verb
             });
             await this.hrforteNotificationProducer.addSendBulkJob({
                 companyId,

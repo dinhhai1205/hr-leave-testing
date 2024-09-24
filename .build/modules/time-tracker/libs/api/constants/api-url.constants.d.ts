@@ -359,6 +359,10 @@ export declare const TIME_TRACKER_URL: {
         method: string;
         url: string;
     };
+    GET_TOTAL_CLOCK_IN_DATE: {
+        method: string;
+        url: string;
+    };
     GET_TIME_ENTRY_OVERVIEW_EMPLOYEE: {
         method: string;
         url: string;

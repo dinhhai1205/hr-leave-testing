@@ -8,5 +8,6 @@ export declare class WorkScheduleAssignmentHrforteNotificationMapper {
         employees: Array<Pick<EmployeeEntity, 'email'>>;
         dateFrom: string;
         dateTo: string;
+        verb: string;
     }): IHrforteNotificationParam[];
 }

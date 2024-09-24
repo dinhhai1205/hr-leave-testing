@@ -26,6 +26,7 @@ const work_schedule_service_1 = require("./work-schedule.service");
 const queue_1 = require("../../../../core/queue");
 const queue_2 = require("./queue");
 const work_schedule_ess_controller_1 = require("./work-schedule-ess.controller");
+const queues_1 = require("../work-schedule-assignment/queues");
 let WorkScheduleModule = class WorkScheduleModule {
 };
 exports.WorkScheduleModule = WorkScheduleModule;
@@ -51,10 +52,20 @@ exports.WorkScheduleModule = WorkScheduleModule = __decorate([
             employee_module_1.EmployeeModule,
             organization_structure_module_1.OrganizationStructureModule,
             work_schedule_assignment_module_1.WorkScheduleAssignmentModule,
-            queue_1.QueueModule.register({ queues: ['WORK_SCHEDULE'] }),
+            queue_1.QueueModule.register({
+                queues: [
+                    'WORK_SCHEDULE',
+                    'WORK_SCHEDULE_ASSIGNMENT',
+                    'HRFORTE_NOTIFICATION',
+                ],
+            }),
         ],
         controllers: [work_schedule_controller_1.WorkScheduleController, work_schedule_ess_controller_1.WorkScheduleESSController],
-        providers: [work_schedule_service_1.WorkScheduleService, queue_2.WorkScheduleProcessor],
+        providers: [
+            work_schedule_service_1.WorkScheduleService,
+            queue_2.WorkScheduleProcessor,
+            queues_1.WorkScheduleAssignmentProcessor,
+        ],
         exports: [work_schedule_service_1.WorkScheduleService],
     })
 ], WorkScheduleModule);

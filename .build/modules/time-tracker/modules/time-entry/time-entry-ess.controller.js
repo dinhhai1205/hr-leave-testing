@@ -92,6 +92,10 @@ let TimeEntryESSController = class TimeEntryESSController {
         const result = await this.timeEntryService.handleCalculateUnpaidDaysTimeTracker(query.employeeIds, query.startDate, query.endDate, companyId, timeTrackerCompanyId);
         return result;
     }
+    async getTotalClockInHour(employeeId, { companyId }, { timeTrackerCompanyId }, date) {
+        const result = await this.timeEntryService.handleCalculateTotalClockInDate(employeeId, companyId, timeTrackerCompanyId, date);
+        return result;
+    }
 };
 exports.TimeEntryESSController = TimeEntryESSController;
 __decorate([
@@ -326,6 +330,21 @@ __decorate([
         dto_1.BaseParamDto, Object]),
     __metadata("design:returntype", Promise)
 ], TimeEntryESSController.prototype, "getCountTimeEntries", null);
+__decorate([
+    (0, common_1.Get)('/total-clock-in/date'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get total clock in hour in date',
+    }),
+    (0, iam_1.Auth)(iam_1.AuthType.Bearer, iam_1.AuthType.Permission),
+    (0, iam_1.Permissions)(enums_1.EApiAppMode.ESS, { selectedEmployeeFields: { id: true } }),
+    __param(0, (0, iam_1.ActiveEss)('id')),
+    __param(1, (0, common_1.Param)()),
+    __param(2, (0, common_2.TimeTrackerEmpInfo)()),
+    __param(3, (0, common_1.Query)('date')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, dto_1.BaseParamDto, Object, String]),
+    __metadata("design:returntype", Promise)
+], TimeEntryESSController.prototype, "getTotalClockInHour", null);
 exports.TimeEntryESSController = TimeEntryESSController = __decorate([
     (0, swagger_1.ApiTags)(common_2.TIME_ENTRY_ESS_API_TAG),
     (0, common_1.UseGuards)(time_tracker_emp_guard_1.TimeTrackerEmployeeInfoGuard),

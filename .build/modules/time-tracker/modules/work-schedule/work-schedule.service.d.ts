@@ -2,7 +2,7 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { Repository } from 'typeorm';
 import { AutoDeductionEntity, BreakRuleEntity, DayScheduleEntity, EmployeeEntity, LocationEntity, TypeOrmBaseService, WorkScheduleEntity } from '../../../../core/database';
 import { WorkScheduleAssignmentEntity } from '../../../../core/database/entities/work-schedule-assignment.entity';
-import { LeaveWorkScheduleProducer } from '../../../../core/queue/producers';
+import { HrforteNotificationProducer, LeaveWorkScheduleProducer } from '../../../../core/queue/producers';
 import { EmployeeService } from '../../../../modules/user/modules/employee/employee.service';
 import { OrganizationStructureService } from '../../../general/modules/organization-structure/organization-structure.service';
 import { UnitTime } from '../../common';
@@ -21,6 +21,8 @@ import { EWorkScheduleState } from './enums/work-schedule-state.enum';
 import { IWorkScheduleAssignee } from './interfaces/work-schedule-assignee.interface';
 import { IWorkScheduleGroupAssignee } from './interfaces/work-schedule-group-assignee.interface';
 import { PaginationQueryDto, PaginationResponseDto } from '../../../../common/dto';
+import { GetWorkScheduleArguments, GetWorkScheduleOptions } from './work-schedule.type';
+import { AppConfig } from '../../../../config';
 export declare class WorkScheduleService extends TypeOrmBaseService<WorkScheduleEntity> {
     private readonly apiService;
     private readonly workScheduleRepository;
@@ -36,7 +38,9 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
     private readonly workScheduleProducer;
     private readonly employeeMappingService;
     private readonly groupMappingService;
-    constructor(apiService: TimeTrackerApiService, workScheduleRepository: Repository<WorkScheduleEntity>, autoDeductionService: AutoDeductionService, breakRuleService: BreakRuleService, dayScheduleService: DayScheduleService, locationWorkScheduleService: LocationWorkScheduleService, companyMappingService: CompanyMappingService, employeeService: EmployeeService, organizationStructureService: OrganizationStructureService, workScheduleAssignmentService: WorkScheduleAssignmentService, schedulerRegistry: SchedulerRegistry, workScheduleProducer: LeaveWorkScheduleProducer, employeeMappingService: EmployeeMappingService, groupMappingService: GroupMappingService);
+    private readonly hrforteNotificationProducer;
+    private readonly appConfig;
+    constructor(apiService: TimeTrackerApiService, workScheduleRepository: Repository<WorkScheduleEntity>, autoDeductionService: AutoDeductionService, breakRuleService: BreakRuleService, dayScheduleService: DayScheduleService, locationWorkScheduleService: LocationWorkScheduleService, companyMappingService: CompanyMappingService, employeeService: EmployeeService, organizationStructureService: OrganizationStructureService, workScheduleAssignmentService: WorkScheduleAssignmentService, schedulerRegistry: SchedulerRegistry, workScheduleProducer: LeaveWorkScheduleProducer, employeeMappingService: EmployeeMappingService, groupMappingService: GroupMappingService, hrforteNotificationProducer: HrforteNotificationProducer, appConfig: Pick<AppConfig, 'clientUrl'>);
     updateAddAssigneesOfWorkSchedule(workScheduleId: number, assigneesDto: IWorkScheduleAssignee, companyId: number, userEmail: string): Promise<WorkScheduleEntity>;
     updateAddGroupAssigneesOfWorkSchedule(workScheduleId: number, assigneeGroupsDto: IWorkScheduleGroupAssignee, companyId: number, userEmail: string): Promise<WorkScheduleEntity>;
     updateRemoveAssigneesOfWorkSchedule(workScheduleId: number, employeeIds: number[], companyId: number, userEmail: string): Promise<WorkScheduleEntity>;
@@ -135,6 +139,15 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         publishHistories: import("./interfaces/work-schedule-publish-history.interface").IWorkSchedulePublishHistory[];
         publishType: EWorkSchedulePublishType;
     } & WorkScheduleEntity>;
+    sendWorkScheduleNotification(params: {
+        employeeIds: number[];
+        userEmail: string;
+        companyId: number;
+        dateFrom: string;
+        dateTo: string;
+        workScheduleId: number;
+        verb: string;
+    }): Promise<void>;
     getAssigneesIsNotAssignedToWorkSchedule(companyId: number): Promise<EmployeeEntity[]>;
     getAssigneesWasAssignedToWorkSchedule(companyId: number, workSchedule: Partial<Pick<WorkScheduleEntity, 'assignees' | 'groupAssignees'>>): Promise<IWorkScheduleAssignee>;
     syncPublishedWorkSchedule(args: {
@@ -142,6 +155,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         workScheduleId: string;
         startDate: string;
         endDate: string;
+        publishType?: EWorkSchedulePublishType;
     }): Promise<any>;
     unpublishWorkSchedule(args: {
         workScheduleId: number;
@@ -381,6 +395,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         groupId: number | undefined;
         groupName: string | undefined;
     } | null)[]>;
+    getWorkScheduleQueryBuilder(args: GetWorkScheduleArguments, options?: GetWorkScheduleOptions): import("typeorm").SelectQueryBuilder<WorkScheduleEntity>;
     getAllGroupWorkScheduleOfEmployee(employeeId: number, companyId: number): Promise<WorkScheduleEntity[]>;
     getOldestLatestWorkSchedule(workSchedules: WorkScheduleEntity[], type: 'oldest' | 'latest'): null;
     getMainWorkScheduleInDate(date: string, workSchedules: WorkScheduleEntity[]): WorkScheduleEntity | null;

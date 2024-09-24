@@ -80,7 +80,15 @@ export declare class WorkScheduleAssignmentService extends TypeOrmBaseService<Wo
         endDate: string;
         publishType?: EWorkSchedulePublishType;
     }): Promise<void>;
-    private sendWorkScheduleNotificationAfterPublish;
+    sendWorkScheduleNotification(params: {
+        employeeIds: number[];
+        userEmail: string;
+        companyId: number;
+        dateFrom: string;
+        dateTo: string;
+        workScheduleId: number;
+        verb: string;
+    }): Promise<void>;
     getWorkScheduleAssignmentsByEmployeeIdWithDate(employeeId: number, companyId: number, date: string): Promise<WorkScheduleAssignmentEntity | null>;
     getWorkScheduleAssignmentsByEmployeeId(employeeId: number, companyId: number): Promise<WorkScheduleAssignmentEntity[]>;
     getAllAssignmentsOfCompany(companyId: number): Promise<WorkScheduleAssignmentEntity[]>;

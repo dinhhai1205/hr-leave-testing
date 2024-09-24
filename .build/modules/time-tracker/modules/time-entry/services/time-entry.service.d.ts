@@ -321,4 +321,5 @@ export declare class TimeEntryService {
     handleRecompute(companyId: number, ttCompanyId: string, userEmail: string, payrollHeaderId: number): Promise<never[] | {
         result: import("../../../../../core/database").TimeSheetAdjustmentEntity[];
     }>;
+    handleCalculateTotalClockInDate(employeeId: number, companyId: number, timeTrackerCompanyId: string, date: string): Promise<any>;
 }

@@ -362,6 +362,10 @@ exports.TIME_TRACKER_URL = {
         method: 'GET',
         url: '/:companyId/time-entries/overview',
     },
+    GET_TOTAL_CLOCK_IN_DATE: {
+        method: 'GET',
+        url: '/:companyId/time-entries/total-clock-in/date/employee/:employeeId',
+    },
     GET_TIME_ENTRY_OVERVIEW_EMPLOYEE: {
         method: 'GET',
         url: '/:companyId/time-entries/overview/employee/:employeeId',

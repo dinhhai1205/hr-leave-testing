@@ -479,6 +479,21 @@ let TimeEntryService = class TimeEntryService {
         const result = await this.timeSheetAdjustmentService.createMultiAdjustmentsFromTimeTracker(unPaidDayData, payrollHeaderId, companyId, userEmail);
         return { result };
     }
+    async handleCalculateTotalClockInDate(employeeId, companyId, timeTrackerCompanyId, date) {
+        const employeeMapping = await this.employeeMappingService.getManyEmployeeMappingByIds({
+            companyId,
+            employeeIds: [employeeId],
+        });
+        const ttEmployeeId = employeeMapping[0].timeTrackerEmployeeId;
+        const { data } = await this.apiService.request({
+            type: 'GET_TOTAL_CLOCK_IN_DATE',
+            segments: { companyId: timeTrackerCompanyId, employeeId: ttEmployeeId },
+            params: {
+                date,
+            },
+        });
+        return data;
+    }
 };
 exports.TimeEntryService = TimeEntryService;
 exports.TimeEntryService = TimeEntryService = __decorate([
