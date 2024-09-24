@@ -19,6 +19,7 @@ const dtos_2 = require("../../break-rule/dtos");
 const dtos_3 = require("../../day-schedule/dtos");
 const dtos_4 = require("../../overtime/dtos");
 const work_schedule_state_enum_1 = require("../enums/work-schedule-state.enum");
+const work_schedule_publish_type_enum_1 = require("../enums/work-schedule-publish-type.enum");
 class CreateWorkScheduleBodyDTO {
     constructor() {
         this.assignees = {};
@@ -167,4 +168,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Object)
 ], CreateWorkScheduleBodyDTO.prototype, "groupAssignees", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateWorkScheduleBodyDTO.prototype, "publishType", void 0);
 //# sourceMappingURL=create-work-schedule-body.dto.js.map

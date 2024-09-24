@@ -6,6 +6,7 @@ import { CreateOvertimeDTO } from '../../overtime/dtos';
 import { EWorkScheduleState } from '../enums/work-schedule-state.enum';
 import { IWorkScheduleAssignee } from '../interfaces/work-schedule-assignee.interface';
 import { IWorkScheduleGroupAssignee } from '../interfaces/work-schedule-group-assignee.interface';
+import { EWorkSchedulePublishType } from '../enums/work-schedule-publish-type.enum';
 export declare class CreateWorkScheduleBodyDTO {
     name: string;
     ttWorkScheduleId?: string;
@@ -31,4 +32,5 @@ export declare class CreateWorkScheduleBodyDTO {
     groupAssigneeIds?: string[];
     assignees?: IWorkScheduleAssignee;
     groupAssignees?: IWorkScheduleGroupAssignee;
+    publishType?: EWorkSchedulePublishType;
 }

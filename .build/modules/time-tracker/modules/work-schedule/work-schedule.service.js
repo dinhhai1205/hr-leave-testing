@@ -613,6 +613,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             `${workScheduleAlias}.state`,
             `${workScheduleAlias}.threshold`,
             `${workScheduleAlias}.ttWorkScheduleId`,
+            `${workScheduleAlias}.publishType`,
             `${breakAlias}.id`,
             `${breakAlias}.name`,
             `${breakAlias}.allowToBeTakenFromTo`,
@@ -1488,6 +1489,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                         endDate: item?.endDate?.toISOString(),
                         state: item?.state,
                         threshold: item?.threshold,
+                        publishType: item?.publishType,
                     };
                     const { data } = await this.apiService.request({
                         type: 'CREATE_WORK_SCHEDULE',
