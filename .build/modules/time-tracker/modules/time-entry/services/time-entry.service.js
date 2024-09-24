@@ -300,7 +300,9 @@ let TimeEntryService = class TimeEntryService {
             companyId,
             employeeIds: [employeeId],
         });
-        const ttEmployeeId = employeeMapping[0].timeTrackerEmployeeId;
+        const ttEmployeeId = employeeMapping[0]?.timeTrackerEmployeeId;
+        if (!ttEmployeeId)
+            throw new common_1.NotFoundException('Not found time tracker employee id');
         const { data } = await this.apiService.request({
             type: 'GET_LAST_ACTIVITY_OF_USER',
             segments: { employeeId: ttEmployeeId, companyId: ttCompanyId },

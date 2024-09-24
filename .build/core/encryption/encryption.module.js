@@ -8,8 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EncryptionModule = void 0;
 const common_1 = require("@nestjs/common");
-const config_1 = require("@nestjs/config");
-const encryption_config_1 = require("../../config/encryption.config");
+const interceptors_1 = require("../../common/interceptors");
 const services_1 = require("./services");
 const frontend_encryption_service_1 = require("./services/frontend-encryption.service");
 const mobile_encryption_service_1 = require("./services/mobile-encryption.service");
@@ -19,8 +18,8 @@ exports.EncryptionModule = EncryptionModule;
 exports.EncryptionModule = EncryptionModule = __decorate([
     (0, common_1.Global)(),
     (0, common_1.Module)({
-        imports: [config_1.ConfigModule.forFeature(encryption_config_1.encryptionConfig)],
         providers: [
+            interceptors_1.DecryptFileInterceptor,
             services_1.EncryptionService,
             frontend_encryption_service_1.FrontendEncryptionService,
             mobile_encryption_service_1.MobileEncryptionService,

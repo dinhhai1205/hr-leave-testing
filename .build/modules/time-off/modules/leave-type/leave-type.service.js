@@ -30,7 +30,9 @@ const create_select_condition_util_1 = require("../../../../core/database/utils/
 const company_1 = require("../../../general/modules/company");
 const company_parameter_service_1 = require("../../../general/modules/company-parameter/company-parameter.service");
 const employee_service_1 = require("../../../user/modules/employee/employee.service");
+const employee_fields_for_common_info_util_1 = require("../../../user/modules/employee/utils/employee-fields-for-common-info.util");
 const leave_type_balance_service_1 = require("../leave-type-balance/leave-type-balance.service");
+const leave_type_balance_fields_for_common_info_util_1 = require("../leave-type-balance/utils/leave-type-balance-fields-for-common-info.util");
 const base_select_all_leave_type_constant_1 = require("./constants/base-select-all-leave-type.constant");
 const leave_type_helper_1 = require("./helpers/leave-type.helper");
 const sub_leave_type_service_1 = require("./sub-leave-type/sub-leave-type.service");
@@ -80,7 +82,8 @@ let LeaveTypeService = class LeaveTypeService extends services_1.LegacyBaseServi
     }
     async getLeaveTypesByQuery(companyId, query, authInfo) {
         const { appMode } = authInfo;
-        const { q, active, calendarView, isParent, isDropDownMode, isSpecial } = query;
+        const { q, calendarView, isParent, isDropDownMode, isSpecial } = query;
+        const active = (0, class_validator_1.isDefined)(query.active) ? query.active : true;
         const baseQueryBuilder = this.createBaseQueryBuilder(query);
         const alias = baseQueryBuilder.alias;
         baseQueryBuilder.select([]);
@@ -120,21 +123,19 @@ let LeaveTypeService = class LeaveTypeService extends services_1.LegacyBaseServi
             if (q) {
                 baseQueryBuilder.andWhere(`(${alias}.name LIKE :q OR ${alias}.code LIKE :q)`, { q: `%${q}%` });
             }
-            if (active !== undefined && active !== null) {
-                if (active === true) {
-                    baseQueryBuilder.andWhere(`${alias}.active = :active`, {
-                        active: true,
-                    });
-                }
-                else if (active === false) {
-                    const filterActiveAlias = isParent === enums_1.EBoolean.TRUE
-                        ? childLeaveTypeAlias
-                        : parentLeaveTypeAlias;
-                    baseQueryBuilder.andWhere(`(
+            if (active === true) {
+                baseQueryBuilder.andWhere(`${alias}.active = :active`, {
+                    active: true,
+                });
+            }
+            else if (active === false) {
+                const filterActiveAlias = isParent === enums_1.EBoolean.TRUE
+                    ? childLeaveTypeAlias
+                    : parentLeaveTypeAlias;
+                baseQueryBuilder.andWhere(`(
                 ${alias}.active = :active              
                 OR ${filterActiveAlias}.active = :active
               )`, { active: false });
-                }
             }
             if (appMode === enums_1.EApiAppMode.ESS && !calendarView) {
                 baseQueryBuilder.andWhere(`${alias}.activeForEss = :activeForEss`, {
@@ -333,7 +334,7 @@ let LeaveTypeService = class LeaveTypeService extends services_1.LegacyBaseServi
         const { authInfo, companyId, query } = payload;
         const { authEmail } = authInfo;
         const baseQueryBuilder = this.employeeService.createBaseQueryBuilder(query);
-        const empAlias = this.employeeService.entityName;
+        const empAlias = baseQueryBuilder.alias;
         const ltbAlias = entities_1.LeaveTypeBalanceEntity.name;
         const ltAlias = entities_1.LeaveTypeEntity.name;
         baseQueryBuilder.leftJoinAndMapMany(`${empAlias}.leaveTypes`, entities_1.LeaveTypeEntity, ltAlias, `
@@ -396,7 +397,7 @@ let LeaveTypeService = class LeaveTypeService extends services_1.LegacyBaseServi
         return Promise.all(insertLeaveTypeBalances);
     }
     async getLeaveBalancesForWeb(payload) {
-        const { companyId, query, authInfo, option } = payload;
+        const { companyId, query, authInfo } = payload;
         const { authEmployeeId, appMode, organizationPaths } = authInfo;
         const { employeeIds } = query;
         const listEmployeeIds = appMode === enums_1.EApiAppMode.ESS && authEmployeeId
@@ -404,25 +405,19 @@ let LeaveTypeService = class LeaveTypeService extends services_1.LegacyBaseServi
             : employeeIds;
         await this.generateLeaveBalanceIfNeeded(payload, listEmployeeIds);
         const baseQueryBuilder2 = this.employeeService.createBaseQueryBuilder(query);
-        const employeeAlias = this.employeeService.entityName;
-        const pagination2 = await this.employeeService.getEntitiesByQuery({ ...query }, () => {
+        const employeeAlias = baseQueryBuilder2.alias;
+        const ltbAlias = database_1.ETableName.LEAVE_TYPE_BALANCE;
+        baseQueryBuilder2.select((0, employee_fields_for_common_info_util_1.employeeFieldsForCommonInfo)(employeeAlias));
+        const pagination2 = await this.employeeService.getEntitiesByQuery(query, () => {
             baseQueryBuilder2
-                .leftJoinAndSelect(`${employeeAlias}.leaveTypeBalances`, 'leaveTypeBalances', `leaveTypeBalances.isDeleted = :isDeleted`)
+                .leftJoin(`${employeeAlias}.leaveTypeBalances`, ltbAlias, `${ltbAlias}.isDeleted = :isDeleted`)
+                .addSelect((0, leave_type_balance_fields_for_common_info_util_1.leaveTypeBalanceFieldsForCommonInfo)(ltbAlias))
                 .andWhere(`${employeeAlias}.active = :active
             AND ${employeeAlias}.companyId = :companyId
             AND ${employeeAlias}.isDeleted = :isDeleted` +
                 this.employeeService.startWithOrgPathCondition(employeeAlias, organizationPaths), { active: true, companyId, isDeleted: false });
             if (listEmployeeIds?.length) {
                 baseQueryBuilder2.andWhere(`${employeeAlias}.id IN (:...employeeIds)`, { employeeIds: listEmployeeIds });
-            }
-            if (option?.joinLeaveType) {
-                baseQueryBuilder2.leftJoinAndSelect(`leaveTypeBalances.leaveType`, 'leaveType', `leaveType.isDeleted = :isDeleted and leaveType.active = :active`, { isDeleted: false, active: true });
-            }
-            if (option?.orderLeaveType) {
-                baseQueryBuilder2.addOrderBy('leaveType.name', 'ASC');
-            }
-            if (option?.selection?.length) {
-                baseQueryBuilder2.select(option.selection);
             }
             return baseQueryBuilder2;
         });
@@ -437,33 +432,42 @@ let LeaveTypeService = class LeaveTypeService extends services_1.LegacyBaseServi
             : employeeIds;
         await this.generateLeaveBalanceIfNeeded(payload, listEmployeeIds);
         const baseQueryBuilder = this.leaveTypeBalanceService.createBaseQueryBuilder(query);
-        const leaveTypeBalanceName = this.leaveTypeBalanceService.entityName;
-        const leaveTypeName = entities_1.LeaveTypeEntity.name;
+        const ltbAlias = baseQueryBuilder.alias;
+        const ltAlias = database_1.ETableName.LEAVE_TYPE;
+        baseQueryBuilder.select((0, leave_type_balance_fields_for_common_info_util_1.leaveTypeBalanceFieldsForCommonInfo)(ltbAlias));
         const queryLeaveType = {
-            condition: `${leaveTypeName}.isDeleted = :isDeleted AND ${leaveTypeName}.companyId = ${companyId}`,
+            condition: `
+      ${ltAlias}.isDeleted = :isDeleted 
+      AND ${ltAlias}.companyId = ${companyId}
+      AND ${ltAlias}.parentId IS NULL
+      `,
             parameter: { isDeleted: false },
         };
         const { q: searchTerm, active = undefined, activeForEss = undefined, } = query;
-        if (searchTerm?.length) {
-            queryLeaveType.condition += ` AND ${leaveTypeName}.name LIKE '%${searchTerm}%'`;
+        if (searchTerm?.trim().length) {
+            queryLeaveType.condition += ` AND UPPER(${ltAlias}.name) LIKE '%${searchTerm.toUpperCase()}%'`;
         }
         if (active !== undefined) {
-            queryLeaveType.condition += ` AND ${leaveTypeName}.active = :active`;
+            queryLeaveType.condition += ` AND ${ltAlias}.active = :active`;
             queryLeaveType.parameter = { ...queryLeaveType.parameter, active };
         }
         if (activeForEss !== undefined) {
-            queryLeaveType.condition += ` AND ${leaveTypeName}.activeForEss = :activeForEss`;
+            queryLeaveType.condition += ` AND ${ltAlias}.activeForEss = :activeForEss`;
             queryLeaveType.parameter = { ...queryLeaveType.parameter, activeForEss };
         }
-        baseQueryBuilder.innerJoinAndSelect(`${leaveTypeBalanceName}.leaveType`, leaveTypeName, queryLeaveType.condition, queryLeaveType.parameter);
-        baseQueryBuilder.orderBy(`${leaveTypeName}.name`, 'ASC');
-        const pagination = await this.leaveTypeBalanceService.getEntitiesByQuery({ ...query }, () => {
-            baseQueryBuilder.andWhere(`${this.leaveTypeBalanceService.entityName}.companyId = :companyId`, { companyId });
+        baseQueryBuilder
+            .innerJoin(`${ltbAlias}.leaveType`, ltAlias, queryLeaveType.condition, queryLeaveType.parameter)
+            .addSelect((0, leave_type_fields_for_dropdown_mode_util_1.leaveTypeFieldsForDropdownMode)(ltAlias));
+        baseQueryBuilder.orderBy(`${ltAlias}.name`, 'ASC');
+        const pagination = await this.leaveTypeBalanceService.getEntitiesByQuery(query, () => {
+            baseQueryBuilder.andWhere(`${ltbAlias}.companyId = :companyId`, {
+                companyId,
+            });
             if (listEmployeeIds?.length) {
-                baseQueryBuilder.andWhere(`${this.leaveTypeBalanceService.entityName}.employeeId IN (:...employeeIds)`, { employeeIds: listEmployeeIds });
+                baseQueryBuilder.andWhere(`${ltbAlias}.employeeId IN (:...employeeIds)`, { employeeIds: listEmployeeIds });
             }
             if (leaveTypeIds?.length) {
-                baseQueryBuilder.andWhere(`${this.leaveTypeBalanceService.entityName}.leaveTypeId IN (:...leaveTypeIds)`, { leaveTypeIds });
+                baseQueryBuilder.andWhere(`${ltbAlias}.leaveTypeId IN (:...leaveTypeIds)`, { leaveTypeIds });
             }
             return baseQueryBuilder;
         });
@@ -605,7 +609,7 @@ let LeaveTypeService = class LeaveTypeService extends services_1.LegacyBaseServi
             throw new common_1.BadRequestException(constants_1.ERR_MSG.MISSING('Employee id'));
         }
         queryBuilder.innerJoin(`${leaveTypeName}.company`, companyName, `${companyName}.isDeleted = :isDeleted AND ${companyName}.active = :active`, { isDeleted: false, active: true });
-        queryBuilder.leftJoinAndSelect(`${leaveTypeName}.leaveTransactions`, leaveTrxName, `${leaveTrxName}.isDeleted = :isDeleted
+        queryBuilder.leftJoin(`${leaveTypeName}.leaveTransactions`, leaveTrxName, `${leaveTrxName}.isDeleted = :isDeleted
         AND ${leaveTrxName}.unit >= 0
         AND ${leaveTrxName}.companyId = :companyId
         AND ${leaveTrxName}.employeeId = :employeeId
@@ -625,8 +629,8 @@ let LeaveTypeService = class LeaveTypeService extends services_1.LegacyBaseServi
             companyId,
             employeeId,
         });
-        queryBuilder.leftJoinAndSelect(`${leaveTrxName}.policy`, policyName, `${policyName}.isDeleted = :isDeleted`, { isDeleted: false });
-        queryBuilder.innerJoinAndSelect(`${leaveTypeName}.leaveTypeBalances`, leaveTypeBalanceName, `${leaveTypeBalanceName}.isDeleted = :isDeleted
+        queryBuilder.leftJoin(`${leaveTrxName}.policy`, policyName, `${policyName}.isDeleted = :isDeleted`, { isDeleted: false });
+        queryBuilder.innerJoin(`${leaveTypeName}.leaveTypeBalances`, leaveTypeBalanceName, `${leaveTypeBalanceName}.isDeleted = :isDeleted
       AND ${leaveTypeBalanceName}.employeeId = :employeeId
       AND ${leaveTypeBalanceName}.companyId = :companyId`, { isDeleted: false, companyId, employeeId });
         queryBuilder.select([
@@ -634,11 +638,14 @@ let LeaveTypeService = class LeaveTypeService extends services_1.LegacyBaseServi
             `${leaveTypeName}.color`,
             `${leaveTypeName}.name`,
             `${leaveTypeName}.code`,
+            `${leaveTypeBalanceName}.id`,
             `${leaveTypeBalanceName}.balance`,
+            `${leaveTrxName}.id`,
             `${leaveTrxName}.unit`,
             `${leaveTrxName}.type`,
             `${leaveTrxName}.date`,
             `${leaveTrxName}.leaveTypeId`,
+            `${policyName}.id`,
             `${policyName}.entitlement`,
         ]);
         queryBuilder.andWhere(`${leaveTypeName}.isDeleted = :isDeleted 

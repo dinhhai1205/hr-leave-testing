@@ -10,7 +10,6 @@ exports.EmployeeModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const employee_entity_1 = require("../../../../core/database/entities/employee.entity");
-const employee_controller_1 = require("./employee.controller");
 const employee_service_1 = require("./employee.service");
 let EmployeeModule = class EmployeeModule {
 };
@@ -19,7 +18,6 @@ exports.EmployeeModule = EmployeeModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([employee_entity_1.EmployeeEntity])],
         providers: [employee_service_1.EmployeeService],
-        controllers: [employee_controller_1.EmployeeController],
         exports: [employee_service_1.EmployeeService],
     })
 ], EmployeeModule);

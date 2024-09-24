@@ -72,37 +72,32 @@ let LegacyAccessTokenGuard = class LegacyAccessTokenGuard {
         catch (error) {
             throw new common_1.UnauthorizedException(error.message);
         }
-        try {
-            const email = decodedToken?.sub || '';
-            const ranking = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || enums_1.EUserRanking.SILVER;
-            if (!email) {
-                throw new common_1.ForbiddenException(constants_1.ERR_MSG.INVALID_JWT);
-            }
-            const authType = (0, utils_1.getDecoratorContext)({
-                reflector: this.reflector,
-                context,
-                key: decorators_1.AUTH_TYPE,
-            }) || enums_1.EAuthType.HRFORTE;
-            switch (authType) {
-                case enums_1.EAuthType.OCTOPRO:
-                    await this.setOctoAuthContext({ request, email, companyId, ranking });
-                    break;
-                case enums_1.EAuthType.HRFORTE:
-                    await this.setHrforteAuthContext({
-                        request,
-                        companyId,
-                        email,
-                        appMode: appMode?.toString(),
-                        ranking,
-                        module: module,
-                    });
-                    break;
-                default:
-                    break;
-            }
+        const email = decodedToken?.sub || '';
+        const ranking = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || enums_1.EUserRanking.SILVER;
+        if (!email) {
+            throw new common_1.ForbiddenException(constants_1.ERR_MSG.INVALID_JWT);
         }
-        catch (error) {
-            throw error.message;
+        const authType = (0, utils_1.getDecoratorContext)({
+            reflector: this.reflector,
+            context,
+            key: decorators_1.AUTH_TYPE,
+        }) || enums_1.EAuthType.HRFORTE;
+        switch (authType) {
+            case enums_1.EAuthType.OCTOPRO:
+                await this.setOctoAuthContext({ request, email, companyId, ranking });
+                break;
+            case enums_1.EAuthType.HRFORTE:
+                await this.setHrforteAuthContext({
+                    request,
+                    companyId,
+                    email,
+                    appMode: appMode?.toString(),
+                    ranking,
+                    module: module,
+                });
+                break;
+            default:
+                break;
         }
         return true;
     }
@@ -119,7 +114,7 @@ let LegacyAccessTokenGuard = class LegacyAccessTokenGuard {
             }
             catch (error) {
                 if (ranking === enums_1.EUserRanking.SILVER) {
-                    throw new common_1.InternalServerErrorException(error);
+                    throw error;
                 }
             }
         }
@@ -142,32 +137,46 @@ let LegacyAccessTokenGuard = class LegacyAccessTokenGuard {
                 payroll: parsePermission(companyUserRole.payroll),
             }
             : undefined;
-        request.authInfo = {
-            authEmail: email,
-            authEmployeeId: employee?.id || undefined,
-            authPermission: permissions,
-            appMode,
-            ranking,
-            module: module.toLowerCase(),
-            utcOffset: employee?.aspNetUsers?.utcOffset ?? 0,
-            organizationPaths,
-            isAdmin: permissions !== undefined,
-        };
+        Object.assign(request, {
+            authInfo: {
+                authEmail: email,
+                authEmployeeId: employee?.id || undefined,
+                authPermission: permissions,
+                appMode,
+                ranking,
+                module: module.toLowerCase(),
+                utcOffset: employee?.aspNetUsers?.utcOffset ?? 0,
+                organizationPaths,
+                isAdmin: permissions !== undefined,
+            },
+        });
     }
     async setOctoAuthContext(args) {
         const { companyId, ranking, email, request } = args;
-        const octoUser = await this.octoUserService.getOctoUser({
-            companyId,
-            email,
-        });
-        if (!octoUser) {
-            throw new common_1.NotFoundException(constants_1.ERR_MSG.NOT_FOUND('octo user', `email ${email}`));
+        let octoUser = null;
+        if (companyId) {
+            try {
+                octoUser = await this.octoUserService.getOctoUser({
+                    companyId,
+                    email,
+                });
+            }
+            catch (error) {
+                if (ranking === enums_1.EUserRanking.SILVER) {
+                    throw error;
+                }
+            }
         }
-        request.authInfo = {
-            authEmail: email,
-            ranking,
-            authUserId: octoUser.id,
-        };
+        if (!octoUser && ranking !== enums_1.EUserRanking.GOLD) {
+            throw new common_1.NotFoundException(`Not found ${email} octo user in the company ${companyId}`);
+        }
+        Object.assign(request, {
+            authInfo: {
+                authEmail: email,
+                ranking,
+                authUserId: octoUser?.id,
+            },
+        });
     }
 };
 exports.LegacyAccessTokenGuard = LegacyAccessTokenGuard;

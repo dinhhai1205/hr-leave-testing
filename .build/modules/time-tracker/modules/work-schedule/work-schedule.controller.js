@@ -125,14 +125,6 @@ let WorkScheduleController = class WorkScheduleController {
             workScheduleId,
         });
     }
-    async test({ companyId }, { employeeId, startDate, endDate, }) {
-        return this.workScheduleService.getWorkScheduleOfEmployeeInDateRange({
-            employeeId,
-            companyId,
-            startDate,
-            endDate,
-        });
-    }
 };
 exports.WorkScheduleController = WorkScheduleController;
 __decorate([
@@ -383,14 +375,6 @@ __decorate([
     __metadata("design:paramtypes", [Number, dto_1.BaseParamDto, Object, Object]),
     __metadata("design:returntype", Promise)
 ], WorkScheduleController.prototype, "updateWorkScheduleDefault", null);
-__decorate([
-    (0, common_1.Post)('/test'),
-    __param(0, (0, common_1.Param)()),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.BaseParamDto, Object]),
-    __metadata("design:returntype", Promise)
-], WorkScheduleController.prototype, "test", null);
 exports.WorkScheduleController = WorkScheduleController = __decorate([
     (0, swagger_1.ApiTags)(common_2.WORK_SCHEDULE_API_TAG),
     (0, common_1.Controller)(common_2.WORK_SCHEDULE_API_PATH),

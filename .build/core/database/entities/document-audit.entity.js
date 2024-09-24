@@ -14,7 +14,6 @@ const typeorm_1 = require("typeorm");
 const enums_1 = require("../../../modules/e-sign/enums");
 const constants_1 = require("../constants");
 const enums_2 = require("../enums");
-const utils_1 = require("../utils");
 const base_app_entity_1 = require("./base-app.entity");
 const document_entity_1 = require("./document.entity");
 let DocumentAuditEntity = class DocumentAuditEntity extends base_app_entity_1.BaseAppEntity {
@@ -57,11 +56,11 @@ __decorate([
     __metadata("design:type", String)
 ], DocumentAuditEntity.prototype, "longitude", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: (0, utils_1.columnType)('JSONB'), nullable: true, select: false }),
+    (0, typeorm_1.Column)({ ...constants_1.JSON_COLUMN_TYPE, nullable: true, select: false }),
     __metadata("design:type", String)
 ], DocumentAuditEntity.prototype, "payload", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: (0, utils_1.columnType)('JSONB'), nullable: true, select: false }),
+    (0, typeorm_1.Column)({ ...constants_1.JSON_COLUMN_TYPE, nullable: true, select: false }),
     __metadata("design:type", String)
 ], DocumentAuditEntity.prototype, "data", void 0);
 __decorate([

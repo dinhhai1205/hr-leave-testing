@@ -58,7 +58,6 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
         });
         if (payroll)
             throw new common_1.BadRequestException('Payroll with payroll transaction header have already existed');
-        const payrollGroup = await this.employeeService.getPayrollGroupByEmployeeId(employeeId, companyId);
         const payrollHeader = await this.prtrxHdrService.getPayrollHeaderById(prtrxHdrId);
         const startDate = payrollHeader?.dateFrom
             ? moment(payrollHeader.dateFrom).format('YYYY-MM-DD')
@@ -93,19 +92,14 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
                 }
             }
         });
-        const totalProrationDays = await this.getDayToProrate(companyId, employeeEntity.payrollGroupId, startDate, endDate);
-        const finalTotalScheduledWorkDays = totalProrationDays !== -1 ? totalProrationDays : totalScheduledWorkDays;
-        const finalTotalScheduledWorkHours = totalProrationDays !== -1
-            ? totalProrationDays * payrollGroup?.hourPerDay
-            : totalScheduledWorkHours;
         return this.create({
             employeeId,
             prtrxHdrId: createPayrollDto?.prtrxHdrId,
-            totalScheduledWorkDays: finalTotalScheduledWorkDays,
-            totalScheduledWorkHours: finalTotalScheduledWorkHours,
+            totalScheduledWorkDays: totalScheduledWorkDays,
+            totalScheduledWorkHours: totalScheduledWorkHours,
             totalPayrollRegularWorkDays: employeeEntity.payCalcMet === 1
-                ? finalTotalScheduledWorkDays
-                : finalTotalScheduledWorkHours,
+                ? totalScheduledWorkDays
+                : totalScheduledWorkHours,
         }, {
             companyId,
             userEmail,
@@ -145,11 +139,9 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
         const employeeEntities = employees.filter(employee => employee !== null);
         const workScheduleEntities = await Promise.all(employeeEntities.map(async (employeeEntity) => {
             const workScheduleEntity = await this.workScheduleService.getWorkScheduleOfEmployee(employeeEntity.id, companyId, employeeEntity);
-            const totalProrationDays = await this.getDayToProrate(companyId, employeeEntity.payrollGroupId, startDate, endDate);
             return {
                 employeeId: employeeEntity.id,
                 payCalcMet: employeeEntity.payCalcMet,
-                totalProrationDays,
                 ...workScheduleEntity,
             };
         }));
@@ -175,27 +167,17 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
                     }
                 }
             }
-            const payrollGroup = await this.employeeService.getPayrollGroupByEmployeeId(workScheduleEntity.employeeId, companyId);
-            const finalTotalScheduledWorkDays = workScheduleEntity.totalProrationDays !== -1
-                ? workScheduleEntity.totalProrationDays
-                : totalScheduledWorkDays;
-            const finalTotalScheduledWorkHours = workScheduleEntity.totalProrationDays !== -1
-                ? workScheduleEntity.totalProrationDays * payrollGroup.hourPerDay
-                : totalScheduledWorkHours;
             return {
                 employeeId: workScheduleEntity.employeeId,
                 prtrxHdrId: createPayrollDto?.prtrxHdrId,
-                totalScheduledWorkDays: finalTotalScheduledWorkDays,
-                totalScheduledWorkHours: finalTotalScheduledWorkHours,
+                totalScheduledWorkDays: totalScheduledWorkDays,
+                totalScheduledWorkHours: totalScheduledWorkHours,
                 totalPayrollRegularWorkDays: workScheduleEntity.payCalcMet === 1
-                    ? finalTotalScheduledWorkDays
-                    : finalTotalScheduledWorkHours,
+                    ? totalScheduledWorkDays
+                    : totalScheduledWorkHours,
             };
         }));
-        return this.createMulti(createDtos, {
-            companyId,
-            userEmail,
-        });
+        return this.processCreateDtos(createDtos, companyId, userEmail);
     }
     async createMultiPayrollsV2(createPayrollDto, companyId, userEmail) {
         const { employeeIds, prtrxHdrId } = createPayrollDto;
@@ -223,22 +205,16 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
         }
         const workScheduleEntities = await Promise.all(employeeEntities.map(async (employeeEntity) => {
             const workScheduleEntity = await this.workScheduleService.getWorkScheduleOfEmployee(employeeEntity.id, companyId, employeeEntity);
-            const totalProrationDays = await this.getDayToProrate(companyId, employeeEntity.payrollGroupId, startDate, endDate);
             return {
                 employeeId: employeeEntity.id,
                 payCalcMet: employeeEntity.payCalcMet,
-                totalProrationDays,
                 payrollGroupId: employeeEntity.payrollGroupId,
                 ...workScheduleEntity,
             };
         }));
-        const payrollGroups = await this.employeeService.getPayrollGroupsByEmployeeIds(employeeEntities.map(e => e.id), companyId);
         const createDtos = workScheduleEntities.map(workScheduleEntity => {
             let totalScheduledWorkHours = 0;
             let totalScheduledWorkDays = 0;
-            const payrollGroup = payrollGroups.find(pg => pg.id === workScheduleEntity.payrollGroupId);
-            if (!payrollGroup)
-                throw new common_1.NotFoundException(`Not found payroll groups for employee: ${workScheduleEntity.employeeId}`);
             for (const trackingInfo of listDayBetweenStartEnd) {
                 const weekDay = (0, common_2.convertDayToWeekDay)(trackingInfo);
                 const daySchedule = workScheduleEntity?.daySchedules?.find(item => item.day === weekDay);
@@ -258,37 +234,28 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
                     }
                 }
             }
-            const finalTotalScheduledWorkDays = workScheduleEntity.totalProrationDays !== -1
-                ? workScheduleEntity.totalProrationDays
-                : totalScheduledWorkDays;
-            const finalTotalScheduledWorkHours = workScheduleEntity.totalProrationDays !== -1
-                ? workScheduleEntity.totalProrationDays * payrollGroup.hourPerDay
-                : totalScheduledWorkHours;
             return {
                 employeeId: workScheduleEntity.employeeId,
                 prtrxHdrId: createPayrollDto?.prtrxHdrId,
-                totalScheduledWorkDays: finalTotalScheduledWorkDays,
-                totalScheduledWorkHours: finalTotalScheduledWorkHours,
+                totalScheduledWorkDays: totalScheduledWorkDays,
+                totalScheduledWorkHours: totalScheduledWorkHours,
                 totalPayrollRegularWorkDays: workScheduleEntity.payCalcMet === 1
-                    ? finalTotalScheduledWorkDays
-                    : finalTotalScheduledWorkHours,
+                    ? totalScheduledWorkDays
+                    : totalScheduledWorkHours,
             };
         });
-        return this.createMulti(createDtos, {
-            companyId,
-            userEmail,
-        });
+        return this.processCreateDtos(createDtos, companyId, userEmail);
     }
     async createPayrollsForEmployeesInPrtrxHdr(createQuery, prtrxHdrId, companyId, userEmail) {
         const employees = await this.prtrxEmpService.getEmployeesByPrtrxHdrId(prtrxHdrId, true);
         const employeeIds = employees.map(employee => employee.employeeId);
         if (employeeIds.length === 0)
             return [];
-        await this.createMultiPayrollsV2({
+        await this.createMultiPayrolls({
             employeeIds,
             prtrxHdrId,
         }, companyId, userEmail);
-        return this.getPayrollsByHeaderIdV2(prtrxHdrId, companyId, createQuery?.payrollCalculationMethod || database_1.PayCalculationMethod.Daily, createQuery);
+        return this.getPayrollsByHeaderId(prtrxHdrId, companyId, createQuery?.payrollCalculationMethod || database_1.PayCalculationMethod.Daily, createQuery);
     }
     async archivePayroll(payrollId, userEmail) {
         const payroll = await this.getOne({
@@ -389,18 +356,17 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
         const employeeEntities = employees.filter(employee => employee !== null);
         const workScheduleEntities = await Promise.all(employeeEntities.map(async (employeeEntity) => {
             const workScheduleEntity = await this.workScheduleService.getWorkScheduleOfEmployee(employeeEntity.id, companyId, employeeEntity);
-            const totalProrationDays = await this.getDayToProrate(companyId, employeeEntity.payrollGroupId, startDate, endDate);
             const payrollTimesheet = await this.payrollTimeSheetRepository.findOne({
                 where: {
                     employeeId: employeeEntity.id,
                     prtrxHdrId: prtrxHdrId,
                     companyId,
+                    isDeleted: false,
                 },
             });
             return {
                 employeeId: employeeEntity.id,
                 payCalcMet: employeeEntity.payCalcMet,
-                totalProrationDays,
                 payrollTimesheetEntity: payrollTimesheet
                     ? payrollTimesheet
                     : undefined,
@@ -429,16 +395,11 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
                     }
                 }
             }
-            const payrollGroup = await this.employeeService.getPayrollGroupByEmployeeId(workScheduleEntity.employeeId, companyId);
             const prId = workScheduleEntity.payrollTimesheetEntity?.id;
             return {
                 id: prId,
-                totalScheduledWorkDays: workScheduleEntity.totalProrationDays !== -1
-                    ? workScheduleEntity.totalProrationDays
-                    : totalScheduledWorkDays,
-                totalScheduledWorkHours: workScheduleEntity.totalProrationDays !== -1
-                    ? workScheduleEntity.totalProrationDays * payrollGroup.hourPerDay
-                    : totalScheduledWorkHours,
+                totalScheduledWorkDays,
+                totalScheduledWorkHours,
                 createdBy: !prId ? userEmail : undefined,
                 createdOn: !prId ? moment.utc().toDate() : undefined,
                 updatedBy: prId ? userEmail : undefined,
@@ -446,6 +407,7 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
             };
         }));
         const updatedPayroll = await this.payrollTimeSheetRepository.save(createDtos);
+        console.log({ updatedPayroll });
         return updatedPayroll;
     }
     async getAllPayrollsOfCompany(companyId, payrollCalculationMethod = database_1.PayCalculationMethod.Daily, paginationQueryDto) {
@@ -1175,16 +1137,16 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
     }
     async handleValidateHeader(actualHeaders, type) {
         if (type === database_1.PayCalculationMethod.Hourly) {
-            const isValidHeader = constants_2.PAYROLL_TIMESHEET_FILE_CONFIG_HOUR.every((header, index) => {
-                return header.name === actualHeaders[index];
+            const isValidHeader = actualHeaders.every((header, index) => {
+                return header === constants_2.PAYROLL_TIMESHEET_FILE_CONFIG_HOUR[index].name;
             });
             if (!isValidHeader) {
                 throw new common_1.BadRequestException('Invalid header format');
             }
         }
         else {
-            const isValidHeader = constants_2.PAYROLL_TIMESHEET_FILE_CONFIG_DAY.every((header, index) => {
-                return header.name === actualHeaders[index];
+            const isValidHeader = actualHeaders.every((header, index) => {
+                return header === constants_2.PAYROLL_TIMESHEET_FILE_CONFIG_DAY[index].name;
             });
             if (!isValidHeader) {
                 throw new common_1.BadRequestException('Invalid header format');
@@ -1193,7 +1155,7 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
     }
     async handleValidateAndFormatData(companyId, payrollHeaderId, data, type) {
         const listEmployeeRef = data.map(itemData => {
-            return itemData[constants_1.EMPLOYEE_REF];
+            return `${itemData[constants_1.EMPLOYEE_REF]}`;
         });
         const employees = await this.employeeService.getEmployeeByEmployeeRef(companyId, listEmployeeRef);
         const result = [];
@@ -1201,7 +1163,7 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
         if (type === database_1.PayCalculationMethod.Hourly) {
             for (let index = 0; index < data.length; index++) {
                 const itemData = data[index];
-                const employeeRef = itemData[constants_1.EMPLOYEE_REF] ?? '';
+                const employeeRef = `${itemData[constants_1.EMPLOYEE_REF]}` || '';
                 const totalScheduledWorkHours = itemData[constants_2.TOTAL_SCHEDULE_WORK_HOUR];
                 const foundEmployee = employees.find(item => {
                     return item.employeeRef === employeeRef;
@@ -1237,14 +1199,11 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
                     totalScheduledWorkHours: totalScheduledWorkHours,
                 });
             }
-            if (listErrorRows.length !== 0) {
-                throw new common_1.BadRequestException(listErrorRows);
-            }
-            return result;
+            return { formatData: result, listErrorRows };
         }
         for (let index = 0; index < data.length; index++) {
             const itemData = data[index];
-            const employeeRef = itemData[constants_1.EMPLOYEE_REF] ?? '';
+            const employeeRef = `${itemData[constants_1.EMPLOYEE_REF]}` || '';
             const totalScheduledWorkDays = itemData[constants_2.TOTAL_SCHEDULE_WORK_DAY];
             const foundEmployee = employees.find(item => {
                 return item.employeeRef === employeeRef;
@@ -1280,10 +1239,7 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
                 totalScheduledWorkDays: totalScheduledWorkDays,
             });
         }
-        if (listErrorRows.length !== 0) {
-            throw new common_1.BadRequestException(listErrorRows);
-        }
-        return result;
+        return { formatData: result, listErrorRows };
     }
     async handleCreateRawFile(type, payrollHeaderId) {
         const workbook = new exceljs_1.Workbook();
@@ -1421,7 +1377,13 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
             data.push(rowData);
         });
         data.shift();
-        const formatData = await this.handleValidateAndFormatData(companyId, payrollHeaderId, data, type);
+        const { formatData, listErrorRows } = await this.handleValidateAndFormatData(companyId, payrollHeaderId, data, type);
+        if (listErrorRows.length !== 0) {
+            return {
+                message: 'Data import completed successfully. However, some rows contained errors and were not processed correctly. Please review the error log for details.',
+                listErrorRows,
+            };
+        }
         const employeeIds = formatData
             .map(itemData => itemData.employeeId)
             .filter(item => item !== undefined);
@@ -1457,7 +1419,7 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
                 };
             }));
         }
-        return { message: 'Import successfully' };
+        return { message: 'Import successfully', listErrorRows };
     }
     async handleGetSampleData(payrollCalculationMethod, companyId, headerId) {
         const payrollAlias = database_1.ETableName.PAYROLL_TIME_SHEET;
@@ -1673,6 +1635,23 @@ let PayrollTimeSheetService = class PayrollTimeSheetService extends database_1.T
             ? payroll.totalScheduledWorkDays
             : payroll.totalScheduledWorkHours;
         return totalProrations - unpaidDays;
+    }
+    async processCreateDtos(createDtos, companyId, userEmail) {
+        const chunkSize = 200;
+        const chunks = [];
+        for (let i = 0; i < createDtos.length; i += chunkSize) {
+            const chunk = createDtos.slice(i, i + chunkSize);
+            chunks.push(chunk);
+        }
+        const result = [];
+        for (const chunk of chunks) {
+            const createdPrs = await this.createMulti(chunk, {
+                companyId,
+                userEmail,
+            });
+            result.push(...createdPrs);
+        }
+        return result;
     }
 };
 exports.PayrollTimeSheetService = PayrollTimeSheetService;

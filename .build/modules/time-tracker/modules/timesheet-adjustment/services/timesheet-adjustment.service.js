@@ -1147,7 +1147,12 @@ let TimeSheetAdjustmentService = class TimeSheetAdjustmentService extends databa
         let dateWorkScheduleEntity = {};
         let totalScheduledWorkHours = 0;
         let totalScheduledWorkDays = 0;
-        const workScheduleMap = await this.workScheduleService.getWorkScheduleOfMultipleDates(employee.id, companyId, listDayBetweenStartEnd);
+        const workScheduleMap = await this.workScheduleService.getWorkScheduleOfEmployeeInDateRange({
+            employeeId: employee.id,
+            companyId,
+            startDate: dateFrom,
+            endDate: dateTo,
+        });
         for (const trackingInfo of listDayBetweenStartEnd) {
             const workScheduleEntity = workScheduleMap[trackingInfo];
             if (!workScheduleEntity)

@@ -431,7 +431,7 @@ let PayrollReportHelper = class PayrollReportHelper {
                 const isPaidOrNonUnpaidCol = prSubField === 'PaidDays' || prSubField === 'NonPaidDay';
                 if (isPaidOrNonUnpaidCol) {
                     const paidOrUnPaidValue = (0, class_validator_1.isDecimal)(String(cellValue))
-                        ? String(cellValue).replace('.', ',')
+                        ? String(cellValue)
                         : cellValue;
                     dataCell.value = paidOrUnPaidValue + ` ${payCalcMet}`;
                 }
@@ -472,80 +472,45 @@ let PayrollReportHelper = class PayrollReportHelper {
     getNumWithTwoDecPlaces(addr) {
         return `IF(TEXT(${addr}, "0,00")=",", 0, TEXT(${addr}, "0,00"))`;
     }
-    calculateTotalPaidAndNonUnpaidCell(params) {
+    calculateTotalDaysAndHoursCell(colType, colNum, params) {
         const { worksheet, lastRow } = params;
+        const totalDaysOrHoursColumn = worksheet.getColumn(colNum).number;
+        if (!totalDaysOrHoursColumn)
+            return;
         const lastColumn = worksheet.columns.length;
         const startRowData = 8;
-        const paidDaysColumn = worksheet.getColumn('Employee:PaidDays').number;
-        const nonPaidDaysColumn = worksheet.getColumn('Employee:NonPaidDay').number;
-        const totalPaidDaysCol = lastColumn + 10;
-        const totalPaidHoursCol = lastColumn + 11;
-        const totalNonPaidDaysCol = lastColumn + 12;
-        const totalNonPaidHoursCol = lastColumn + 13;
+        let totalDaysCol = lastColumn + 10;
+        let totalHoursCol = lastColumn + 11;
+        if (colType === 'NonPaidDay') {
+            totalDaysCol = lastColumn + 12;
+            totalHoursCol = lastColumn + 13;
+        }
         for (let row = 8; row < lastRow; row++) {
-            const paidDayCell = worksheet.getCell(row, paidDaysColumn).address;
-            const nonPaidDayCell = worksheet.getCell(row, nonPaidDaysColumn).address;
-            worksheet.getCell(row, totalPaidDaysCol).value = {
-                formula: this.getNumberInTextFormula(paidDayCell, 'Day'),
+            const daysOrHoursCell = worksheet.getCell(row, totalDaysOrHoursColumn).address;
+            worksheet.getCell(row, totalDaysCol).value = {
+                formula: this.getNumberInTextFormula(daysOrHoursCell, 'Days'),
             };
-            worksheet.getCell(row, totalPaidHoursCol).value = {
-                formula: this.getNumberInTextFormula(paidDayCell, 'Hour'),
-            };
-            worksheet.getCell(row, totalNonPaidDaysCol).value = {
-                formula: this.getNumberInTextFormula(nonPaidDayCell, 'Day'),
-            };
-            worksheet.getCell(row, totalNonPaidHoursCol).value = {
-                formula: this.getNumberInTextFormula(nonPaidDayCell, 'Hour'),
+            worksheet.getCell(row, totalHoursCol).value = {
+                formula: this.getNumberInTextFormula(daysOrHoursCell, 'Hours'),
             };
         }
-        const startTotalPaidDaysCell = worksheet.getCell(startRowData, totalPaidDaysCol).address;
-        const startTotalPaidHoursCell = worksheet.getCell(startRowData, totalPaidHoursCol).address;
-        const startTotalNonPaidDaysCell = worksheet.getCell(startRowData, totalNonPaidDaysCol).address;
-        const startTotalNonPaidHoursCell = worksheet.getCell(startRowData, totalNonPaidHoursCol).address;
-        const endTotalPaidDaysCell = worksheet.getCell(lastRow - 1, totalPaidDaysCol).address;
-        const endTotalPaidHoursCell = worksheet.getCell(lastRow - 1, totalPaidHoursCol).address;
-        const endTotalNonPaidDaysCell = worksheet.getCell(lastRow - 1, totalNonPaidDaysCol).address;
-        const endTotalNonPaidHoursCell = worksheet.getCell(lastRow - 1, totalNonPaidHoursCol).address;
-        worksheet.getCell(lastRow, totalPaidDaysCol).value = {
-            formula: `SUM(
-        SUM(${startTotalPaidDaysCell}:${endTotalPaidDaysCell}), 
-        ${this.convertHoursToDaysFormula(startTotalPaidHoursCell, endTotalPaidHoursCell)}
-      )`,
+        const startTotalDaysCell = worksheet.getCell(startRowData, totalDaysCol).address;
+        const startTotalHoursCell = worksheet.getCell(startRowData, totalHoursCol).address;
+        const endTotalDaysCell = worksheet.getCell(lastRow - 1, totalDaysCol).address;
+        const endTotalHoursCell = worksheet.getCell(lastRow - 1, totalHoursCol).address;
+        worksheet.getCell(lastRow, totalDaysCol).value = {
+            formula: `SUM(${startTotalDaysCell}:${endTotalDaysCell})`,
         };
-        worksheet.getCell(lastRow, totalPaidHoursCol).value = {
-            formula: `SUM(
-        SUM(${startTotalPaidHoursCell}:${endTotalPaidHoursCell}), 
-        ${this.convertDaysToHoursFormula(startTotalPaidDaysCell, endTotalPaidDaysCell)}
-      )`,
+        worksheet.getCell(lastRow, totalHoursCol).value = {
+            formula: `SUM(${startTotalHoursCell}:${endTotalHoursCell})`,
         };
-        worksheet.getCell(lastRow, totalNonPaidDaysCol).value = {
-            formula: `SUM(
-        SUM(${startTotalNonPaidDaysCell}:${endTotalNonPaidDaysCell}),
-        ${this.convertHoursToDaysFormula(startTotalNonPaidHoursCell, endTotalNonPaidHoursCell)}
-      )`,
-        };
-        worksheet.getCell(lastRow, totalNonPaidHoursCol).value = {
-            formula: `SUM(
-        SUM(${startTotalNonPaidHoursCell}:${endTotalNonPaidHoursCell}), 
-        ${this.convertDaysToHoursFormula(startTotalNonPaidDaysCell, endTotalNonPaidDaysCell)}
-      )`,
-        };
-        const totalPaidDays = worksheet.getCell(lastRow, totalPaidDaysCol);
-        const totalPaidHours = worksheet.getCell(lastRow, totalPaidHoursCol);
-        const totalNonPaidDays = worksheet.getCell(lastRow, totalNonPaidDaysCol);
-        const totalNonPaidHours = worksheet.getCell(lastRow, totalNonPaidHoursCol);
-        worksheet.getCell(lastRow, paidDaysColumn).value = {
-            formula: `SUBSTITUTE( 
-        SUBSTITUTE("Days: " & ${this.getNumWithTwoDecPlaces(totalPaidDays.address)} & " | Hours: " & ${this.getNumWithTwoDecPlaces(totalPaidHours.address)}, "%day", ${totalPaidDays.address}),
+        const totalDays = worksheet.getCell(lastRow, totalDaysCol);
+        const totalHours = worksheet.getCell(lastRow, totalHoursCol);
+        worksheet.getCell(lastRow, totalDaysOrHoursColumn).value = {
+            formula: `SUBSTITUTE(
+        SUBSTITUTE("Days: " & ${this.getNumWithTwoDecPlaces(totalDays.address)} & " | Hours: " & ${this.getNumWithTwoDecPlaces(totalHours.address)}, "%day", ${totalDays.address}),
         "%hour",
-        ${totalPaidHours.address}
-      )`,
-        };
-        worksheet.getCell(lastRow, nonPaidDaysColumn).value = {
-            formula: `SUBSTITUTE( 
-        SUBSTITUTE("Days: " & ${this.getNumWithTwoDecPlaces(totalNonPaidDays.address)} & " | Hours: " & ${this.getNumWithTwoDecPlaces(totalNonPaidHours.address)}, "%day", ${totalNonPaidDays.address}),
-        "%hour",
-        ${totalNonPaidHours.address}
+        ${totalHours.address}
       )`,
         };
     }

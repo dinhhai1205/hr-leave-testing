@@ -435,10 +435,6 @@ let PayrollReportService = class PayrollReportService {
             from: { row: 7, column: 1 },
             to: { row: lastRow, column: columns.length ?? 0 },
         };
-        this.payrollReportHelper.calculateTotalPaidAndNonUnpaidCell({
-            worksheet,
-            lastRow,
-        });
         await workbook.commit();
     }
     async batchesInsertPayrollReportToExcel(args) {

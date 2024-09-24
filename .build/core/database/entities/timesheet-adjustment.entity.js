@@ -13,7 +13,6 @@ exports.TimeSheetAdjustmentEntity = void 0;
 const typeorm_1 = require("typeorm");
 const constants_1 = require("../constants");
 const enums_1 = require("../enums");
-const utils_1 = require("../utils");
 const base_app_entity_1 = require("./base-app.entity");
 const pay_element_mapping_entity_1 = require("./pay-element-mapping.entity");
 const payroll_timesheet_entity_1 = require("./payroll-timesheet.entity");
@@ -65,7 +64,7 @@ __decorate([
     __metadata("design:type", Number)
 ], TimeSheetAdjustmentEntity.prototype, "companyId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: (0, utils_1.columnType)('JSONB'), nullable: true, default: {} }),
+    (0, typeorm_1.Column)({ ...constants_1.JSON_COLUMN_TYPE, nullable: true, default: {} }),
     __metadata("design:type", String)
 ], TimeSheetAdjustmentEntity.prototype, "workScheduleSetting", void 0);
 __decorate([

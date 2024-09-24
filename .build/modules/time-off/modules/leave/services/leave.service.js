@@ -168,11 +168,25 @@ let LeaveService = class LeaveService extends services_1.LegacyBaseService {
         const employeeAlias = 'employee';
         const leaveTypeAlias = 'leaveType';
         const approverTrxAlias = database_1.ETableName.TRX_APPROVAL_USER;
+        const costCenterAlias = database_1.ETableName.COST_CENTER;
+        const orgStructureAlias = database_1.ETableName.ORGANIZATION_STRUCTURE;
         const pagination = await this.getEntitiesByQuery({ ...newQuery }, () => {
             baseQueryBuilder
                 .innerJoin(`${leaveAlias}.employee`, employeeAlias, `${employeeAlias}.isDeleted = :isDeleted` +
                 this.employeeService.startWithOrgPathCondition(employeeAlias, organizationPaths), { isDeleted: false })
-                .addSelect((0, employee_fields_for_common_info_util_1.employeeFieldsForCommonInfo)(employeeAlias));
+                .addSelect((0, employee_fields_for_common_info_util_1.employeeFieldsForCommonInfo)(employeeAlias))
+                .leftJoin(`${employeeAlias}.costCenter`, costCenterAlias, `${costCenterAlias}.isDeleted = :isDeleted`, { isDeleted: false })
+                .addSelect([
+                `${costCenterAlias}.id`,
+                `${costCenterAlias}.name`,
+                `${costCenterAlias}.code`,
+            ])
+                .leftJoin(`${employeeAlias}.orgStructure`, orgStructureAlias, `${orgStructureAlias}.isDeleted = :isDeleted`, { isDeleted: false })
+                .addSelect([
+                `${orgStructureAlias}.id`,
+                `${orgStructureAlias}.name`,
+                `${orgStructureAlias}.code`,
+            ]);
             baseQueryBuilder
                 .leftJoin(`${leaveAlias}.leaveType`, leaveTypeAlias, `${leaveTypeAlias}.isDeleted = :isDeleted
             AND ${leaveTypeAlias}.companyId = :companyId`, { companyId, isDeleted: false })

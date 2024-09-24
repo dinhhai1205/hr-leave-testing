@@ -21,7 +21,9 @@ const enums_1 = require("../../../../../common/enums");
 const utils_1 = require("../../../../../common/utils");
 const entities_1 = require("../../../../../core/database/entities");
 const approval_user_service_1 = require("../../../../approval/modules/approval-user/approval-user.service");
+const payroll_group_fieds_for_calculate_day_leaveutil_1 = require("../../../../payroll/modules/payroll-group/utils/payroll-group-fieds-for-calculate-day-leaveutil");
 const employee_service_1 = require("../../../../user/modules/employee/employee.service");
+const employee_fields_for_assignment_util_1 = require("../../../../user/modules/employee/utils/employee-fields-for-assignment.util");
 const leave_type_service_1 = require("../../leave-type/leave-type.service");
 const leave_service_1 = require("./leave.service");
 let LeaveV2Service = class LeaveV2Service {
@@ -39,14 +41,17 @@ let LeaveV2Service = class LeaveV2Service {
         const payrollGroupAlias = (0, utils_1.aliasEntity)(entities_1.PayrollGroupEntity);
         const queryBuilder = this.employeeService.repository
             .createQueryBuilder(employeeAlias)
-            .andWhere(`${employeeAlias}.isDeleted = :isDeleted`, { isDeleted: false })
-            .andWhere(`${employeeAlias}.active = :active`, { active: true })
-            .andWhere(`${employeeAlias}.isEssEnabled = :isEssEnabled`, {
-            isEssEnabled: true,
-        })
-            .andWhere(`${employeeAlias}.email = :email`, { email: email })
-            .leftJoinAndSelect(`${employeeAlias}.payrollGroups`, payrollGroupAlias, `${payrollGroupAlias}.id = "${employeeAlias}"."payroll_group_id"
-          AND ${payrollGroupAlias}.isDeleted = :isDeleted`, { isDeleted: false });
+            .andWhere(`${employeeAlias}.isDeleted = :isDeleted
+        AND ${employeeAlias}.active = :active
+        AND ${employeeAlias}.isEssEnabled = :isEssEnabled
+        AND ${employeeAlias}.email = :email
+        `, { isDeleted: false, active: true, isEssEnabled: true, email })
+            .select([
+            `${employeeAlias}.payrollGroupId`,
+            ...(0, employee_fields_for_assignment_util_1.employeeFieldsForAssignment)(employeeAlias),
+        ])
+            .leftJoin(`${employeeAlias}.payrollGroups`, payrollGroupAlias, `${payrollGroupAlias}.id = "${employeeAlias}"."payroll_group_id"`)
+            .addSelect((0, payroll_group_fieds_for_calculate_day_leaveutil_1.payrollGroupFieldsForCalculateDayLeave)(payrollGroupAlias));
         const employee = await queryBuilder.getOne();
         if (!employee) {
             throw new common_1.NotFoundException(`Not found employee with email ${email}`);

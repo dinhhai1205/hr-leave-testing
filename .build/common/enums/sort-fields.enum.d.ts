@@ -1,6 +1,10 @@
 export declare enum ELeaveSortFields {
     employeeRef = "employee.employeeRef",
     fullNameLocal = "employee.fullNameLocal",
+    costCenterName = "cost_center.name",
+    costCenterCode = "cost_center.code",
+    orgElementName = "organization_structure.name",
+    orgElementCode = "organization_structure.code",
     fullNameEn = "employee.fullNameEn",
     paidLeave = "leaveType.paidLeave",
     leaveTypeCode = "leaveType.code",

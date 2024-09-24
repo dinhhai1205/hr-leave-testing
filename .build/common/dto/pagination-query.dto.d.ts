@@ -11,4 +11,5 @@ export declare class PaginationQueryDto {
     readonly order?: EOrder;
     sort?: string;
     readonly isSelectAll: boolean;
+    readonly countTotalEntities?: boolean;
 }

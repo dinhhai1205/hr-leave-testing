@@ -96,7 +96,7 @@ export declare class PayrollReportHelper {
     convertHoursToDaysFormula(fromCellAddr: string, toCellAddr: string): string;
     convertDaysToHoursFormula(fromCellAddr: string, toCellAddr: string): string;
     getNumWithTwoDecPlaces(addr: string): string;
-    calculateTotalPaidAndNonUnpaidCell(params: {
+    calculateTotalDaysAndHoursCell(colType: 'PaidDays' | 'NonPaidDay', colNum: number, params: {
         worksheet: ExcelJS.Worksheet;
         lastRow: number;
     }): void;

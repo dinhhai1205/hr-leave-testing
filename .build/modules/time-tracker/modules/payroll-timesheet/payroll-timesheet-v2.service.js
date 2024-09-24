@@ -72,7 +72,12 @@ let PayrollTimeSheetServiceV2 = class PayrollTimeSheetServiceV2 extends database
             : (0, common_2.getCurrentWeek)();
         let totalScheduledWorkHours = 0;
         let totalScheduledWorkDays = 0;
-        const workScheduleMap = await this.workScheduleService.getWorkScheduleOfMultipleDates(employeeEntity.id, companyId, listDayBetweenStartEnd);
+        const workScheduleMap = await this.workScheduleService.getWorkScheduleOfEmployeeInDateRange({
+            employeeId: employeeEntity.id,
+            companyId,
+            startDate,
+            endDate,
+        });
         for (const trackingInfo of listDayBetweenStartEnd) {
             const workScheduleEntity = workScheduleMap[trackingInfo];
             if (!workScheduleEntity)
@@ -135,7 +140,12 @@ let PayrollTimeSheetServiceV2 = class PayrollTimeSheetServiceV2 extends database
         const workScheduleEntities = await Promise.all(employeeEntities.map(async (employeeEntity) => {
             let totalScheduledWorkHours = 0;
             let totalScheduledWorkDays = 0;
-            const workScheduleMap = await this.workScheduleService.getWorkScheduleOfMultipleDates(employeeEntity.id, companyId, listDayBetweenStartEnd);
+            const workScheduleMap = await this.workScheduleService.getWorkScheduleOfEmployeeInDateRange({
+                employeeId: employeeEntity.id,
+                companyId,
+                startDate,
+                endDate,
+            });
             for (const trackingInfo of listDayBetweenStartEnd) {
                 const workScheduleEntity = workScheduleMap[trackingInfo];
                 if (!workScheduleEntity)
@@ -295,7 +305,12 @@ let PayrollTimeSheetServiceV2 = class PayrollTimeSheetServiceV2 extends database
         const workScheduleEntities = await Promise.all(employeeEntities.map(async (employeeEntity) => {
             let totalScheduledWorkHours = 0;
             let totalScheduledWorkDays = 0;
-            const workScheduleMap = await this.workScheduleService.getWorkScheduleOfMultipleDates(employeeEntity.id, companyId, listDayBetweenStartEnd);
+            const workScheduleMap = await this.workScheduleService.getWorkScheduleOfEmployeeInDateRange({
+                employeeId: employeeEntity.id,
+                companyId,
+                startDate,
+                endDate,
+            });
             for (const trackingInfo of listDayBetweenStartEnd) {
                 const workScheduleEntity = workScheduleMap[trackingInfo];
                 if (!workScheduleEntity)
@@ -762,17 +777,20 @@ let PayrollTimeSheetServiceV2 = class PayrollTimeSheetServiceV2 extends database
         const organizationStructureAlias = database_1.ETableName.ORGANIZATION_STRUCTURE;
         const payrollGroupAlias = database_1.ETableName.PAYROLL_GROUP;
         const costCenterAlias = database_1.ETableName.COST_CENTER;
+        const prtrxEmpAlias = database_1.ETableName.PRTRX_EMP;
         const queryBuilder = this.payrollTimeSheetRepository
             .createQueryBuilder(payrollAlias)
             .leftJoinAndSelect(`${payrollAlias}.employee`, employeeAlias, `${employeeAlias}.is_deleted = :isDeleted AND ${employeeAlias}.id = ${payrollAlias}.employee_id AND ${employeeAlias}.active = :isActive`, { isDeleted: false, isActive: true })
             .leftJoinAndSelect(`${employeeAlias}.orgStructure`, organizationStructureAlias, `${organizationStructureAlias}.id = ${employeeAlias}.organization_element_id AND ${organizationStructureAlias}.is_deleted = :isDeleted`, { isDeleted: false })
             .leftJoinAndSelect(`${employeeAlias}.payrollGroups`, payrollGroupAlias, `${payrollGroupAlias}.id = ${employeeAlias}.payroll_group_id AND ${payrollGroupAlias}.is_deleted = :isDeleted`, { isDeleted: false })
             .leftJoinAndSelect(`${employeeAlias}.costCenter`, costCenterAlias, `${costCenterAlias}.id = ${employeeAlias}.cost_center_id AND ${costCenterAlias}.is_deleted = :isDeleted`, { isDeleted: false })
-            .where(`${payrollAlias}.company_id = :companyId AND ${payrollAlias}.is_deleted = :isDeleted AND ${payrollAlias}.prtrx_hdr_id = :prtrxHdrId AND ${employeeAlias}.pay_calc_met = :calculationMethod`, {
+            .leftJoinAndSelect(`${employeeAlias}.prtrxEmps`, prtrxEmpAlias, `${prtrxEmpAlias}.employee_id = ${employeeAlias}.id AND ${prtrxEmpAlias}.is_deleted = :isDeleted`, { isDeleted: false })
+            .where(`${payrollAlias}.company_id = :companyId AND ${payrollAlias}.is_deleted = :isDeleted AND ${payrollAlias}.prtrx_hdr_id = :prtrxHdrId AND ${employeeAlias}.pay_calc_met = :calculationMethod AND ${prtrxEmpAlias}.included = :included`, {
             companyId: companyId,
             isDeleted: false,
             prtrxHdrId: payrollHeaderId,
             calculationMethod: payrollCalculationMethod === database_1.PayCalculationMethod.Daily ? 1 : 2,
+            included: true,
         });
         const rawResult = await this.getEntitiesByQuery({
             queryBuilder,
@@ -855,16 +873,19 @@ let PayrollTimeSheetServiceV2 = class PayrollTimeSheetServiceV2 extends database
         const organizationStructureAlias = database_1.ETableName.ORGANIZATION_STRUCTURE;
         const payrollGroupAlias = database_1.ETableName.PAYROLL_GROUP;
         const costCenterAlias = database_1.ETableName.COST_CENTER;
+        const prtrxEmpAlias = database_1.ETableName.PRTRX_EMP;
         const queryBuilder = await this.payrollTimeSheetRepository
             .createQueryBuilder(payrollAlias)
             .leftJoinAndSelect(`${payrollAlias}.employee`, employeeAlias, `${employeeAlias}.is_deleted = :isDeleted AND ${employeeAlias}.id = ${payrollAlias}.employee_id AND ${employeeAlias}.active = :isActive`, { isDeleted: false, isActive: true })
             .leftJoinAndSelect(`${employeeAlias}.orgStructure`, organizationStructureAlias, `${organizationStructureAlias}.id = ${employeeAlias}.organization_element_id AND ${organizationStructureAlias}.is_deleted = :isDeleted`, { isDeleted: false })
             .leftJoinAndSelect(`${employeeAlias}.payrollGroups`, payrollGroupAlias, `${payrollGroupAlias}.id = ${employeeAlias}.payroll_group_id AND ${payrollGroupAlias}.is_deleted = :isDeleted`, { isDeleted: false })
             .leftJoinAndSelect(`${employeeAlias}.costCenter`, costCenterAlias, `${costCenterAlias}.id = ${employeeAlias}.cost_center_id AND ${costCenterAlias}.is_deleted = :isDeleted`, { isDeleted: false })
-            .where(`${payrollAlias}.company_id = :companyId AND ${payrollAlias}.is_deleted = :isDeleted AND ${payrollAlias}.prtrx_hdr_id = :prtrxHdrId`, {
+            .leftJoinAndSelect(`${employeeAlias}.prtrxEmps`, prtrxEmpAlias, `${employeeAlias}.id = ${prtrxEmpAlias}.employee_id AND ${prtrxEmpAlias}.is_deleted = :isDeleted`, { isDeleted: false })
+            .where(`${payrollAlias}.company_id = :companyId AND ${payrollAlias}.is_deleted = :isDeleted AND ${payrollAlias}.prtrx_hdr_id = :prtrxHdrId AND ${prtrxEmpAlias}.included = :included`, {
             companyId: companyId,
             isDeleted: false,
             prtrxHdrId: payrollHeaderId,
+            included: true,
         });
         const { q: querySearchString, querySearchFields = [
             constants_2.QUERY_FIELDS.FULL_NAME_LOCAL,

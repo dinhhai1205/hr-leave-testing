@@ -20,12 +20,12 @@ let ApiKeyGuard = class ApiKeyGuard {
         const request = context.switchToHttp().getRequest();
         const apiKey = this.extractKeyFromHeader(request);
         if (!apiKey)
-            throw new common_1.UnauthorizedException();
+            throw new common_1.UnauthorizedException('Missing api key');
         try {
             return this.apiKeyService.validate(apiKey);
         }
         catch (error) {
-            throw new common_1.UnauthorizedException();
+            throw new common_1.UnauthorizedException(error);
         }
     }
     extractKeyFromHeader(request) {

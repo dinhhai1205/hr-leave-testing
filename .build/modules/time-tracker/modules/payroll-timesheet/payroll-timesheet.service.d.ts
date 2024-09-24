@@ -214,7 +214,10 @@ export declare class PayrollTimeSheetService extends TypeOrmBaseService<PayrollT
     handleValidateHeader(actualHeaders: string[], type: PayCalculationMethod): Promise<void>;
     handleValidateAndFormatData(companyId: number, payrollHeaderId: number, data: {
         [key: string]: any;
-    }[], type: PayCalculationMethod): Promise<UpdatePayrollTimeSheetDto[]>;
+    }[], type: PayCalculationMethod): Promise<{
+        formatData: UpdatePayrollTimeSheetDto[];
+        listErrorRows: string[];
+    }>;
     handleCreateRawFile(type: PayCalculationMethod, payrollHeaderId?: number): Promise<{
         workbook: Workbook;
         worksheet: import("exceljs").Worksheet;
@@ -231,6 +234,7 @@ export declare class PayrollTimeSheetService extends TypeOrmBaseService<PayrollT
     }>;
     handleImportFilePayrollTimesheetFile(companyId: number, payrollHeaderId: number, file: IMulterFileUploaded, userEmail: string, type: PayCalculationMethod): Promise<{
         message: string;
+        listErrorRows: string[];
     }>;
     handleGetSampleData(payrollCalculationMethod: PayCalculationMethod, companyId: number, headerId: number): Promise<{
         id: number;
@@ -257,4 +261,5 @@ export declare class PayrollTimeSheetService extends TypeOrmBaseService<PayrollT
     archiveAllPayrollTimesheets(prtrxHdrId: number, companyId: number, userEmail: string): Promise<import("typeorm").UpdateResult>;
     archiveMultiPayrollTimesheet(employeeIds: number[], prtrxHdrId: number, companyId: number, userEmail: string): Promise<import("typeorm").UpdateResult>;
     calculatePayrollRegularWorkDays(payrollId: number, companyId: number): Promise<number>;
+    processCreateDtos(createDtos: any[], companyId: number, userEmail: string): Promise<PayrollTimeSheetEntity[]>;
 }

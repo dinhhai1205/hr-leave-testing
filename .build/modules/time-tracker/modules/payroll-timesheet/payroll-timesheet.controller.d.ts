@@ -13,6 +13,7 @@ export declare class PayrollTimeSheetController {
     exportPayrollTimesheetExcelFile(companyId: number, headerId: number, query: QueryWithPaginationDto): Promise<StreamableFile>;
     importPayrollTimesheetExcelFile(companyId: number, headerId: number, file: IMulterFileUploaded, userEmail: string, type: PayCalculationMethod): Promise<{
         message: string;
+        listErrorRows: string[];
     }>;
     getPayrollsByHeaderId(companyId: number, headerId: number, query: QueryWithPaginationDto): Promise<{
         data: {
@@ -66,7 +67,7 @@ export declare class PayrollTimeSheetController {
         hasPreviousPage: boolean;
         hasNextPage: boolean;
     }>;
-    createPayrollsForEmployeesInPrtrxHdr(companyId: number, headerId: number, updateRegularWorkDays: boolean, userEmail: string, query: CreatePayrollByPrtrxHdrDto): Promise<never[] | {
+    createPayrollsForEmployeesInPrtrxHdr(companyId: number, headerId: number, userEmail: string, query: CreatePayrollByPrtrxHdrDto): Promise<never[] | {
         data: {
             id: number;
             employeeId: number;

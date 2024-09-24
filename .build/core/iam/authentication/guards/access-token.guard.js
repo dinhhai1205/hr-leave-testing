@@ -49,17 +49,12 @@ let AccessTokenGuard = class AccessTokenGuard {
         catch (error) {
             throw new common_1.UnauthorizedException(error.message);
         }
-        try {
-            await this.setActiveUserToRequest({
-                request,
-                jwtPayload,
-                companyId,
-                context,
-            });
-        }
-        catch (error) {
-            throw new common_1.InternalServerErrorException(error.message);
-        }
+        await this.setActiveUserToRequest({
+            request,
+            jwtPayload,
+            companyId,
+            context,
+        });
         return true;
     }
     extractTokenFromHeader(request) {
@@ -86,7 +81,7 @@ let AccessTokenGuard = class AccessTokenGuard {
         }
         catch (error) {
             if (ranking === enums_1.EUserRanking.SILVER) {
-                throw new common_1.InternalServerErrorException(error);
+                throw error;
             }
         }
         const activeUserData = this.setUserData(request, jwtPayload, adminData);

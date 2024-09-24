@@ -52,8 +52,8 @@ let PayrollTimeSheetController = class PayrollTimeSheetController {
     getAllPayrollsInPrtrxHdr(companyId, headerId, query) {
         return this.payrollTimeSheetServiceV2.getAllPayrollsByHeaderId(headerId, companyId, query);
     }
-    createPayrollsForEmployeesInPrtrxHdr(companyId, headerId, updateRegularWorkDays, userEmail, query) {
-        return this.payrollTimeSheetServiceV2.createPayrollsForEmployeesInPrtrxHdr(query, headerId, companyId, userEmail, updateRegularWorkDays);
+    createPayrollsForEmployeesInPrtrxHdr(companyId, headerId, userEmail, query) {
+        return this.payrollTimeSheetServiceV2.createPayrollsForEmployeesInPrtrxHdr(query, headerId, companyId, userEmail);
     }
     getAllPayrollsOfEmployee(companyId, employeeId, query) {
         return this.payrollTimeSheetServiceV2.getAllPayrollsOfEmployee(employeeId, companyId, query.payrollCalculationMethod, query);
@@ -183,11 +183,10 @@ __decorate([
     }),
     __param(0, (0, common_2.Param)('companyId', common_2.ParseIntPipe)),
     __param(1, (0, common_2.Param)('headerId', common_2.ParseIntPipe)),
-    __param(2, (0, common_2.Param)('updateRegularWorkDays')),
-    __param(3, (0, iam_1.ActiveUser)('userEmail')),
-    __param(4, (0, common_2.Query)()),
+    __param(2, (0, iam_1.ActiveUser)('userEmail')),
+    __param(3, (0, common_2.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Number, Boolean, String, dtos_1.CreatePayrollByPrtrxHdrDto]),
+    __metadata("design:paramtypes", [Number, Number, String, dtos_1.CreatePayrollByPrtrxHdrDto]),
     __metadata("design:returntype", void 0)
 ], PayrollTimeSheetController.prototype, "createPayrollsForEmployeesInPrtrxHdr", null);
 __decorate([

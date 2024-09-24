@@ -35,6 +35,7 @@ const services_1 = require("../../../../core/database/services");
 const payroll_group_fieds_for_calculate_day_leaveutil_1 = require("../../../payroll/modules/payroll-group/utils/payroll-group-fieds-for-calculate-day-leaveutil");
 const get_all_employee_policy_credit_selection_constant_1 = require("./constants/get-all-employee-policy-credit-selection.constant");
 const employee_fields_for_assignment_util_1 = require("./utils/employee-fields-for-assignment.util");
+const employee_fields_for_common_info_util_1 = require("./utils/employee-fields-for-common-info.util");
 const employee_module_type_enum_1 = require("../../../time-tracker/modules/employee/enums/employee-module-type.enum");
 let EmployeeService = class EmployeeService extends services_1.LegacyBaseService {
     constructor(employeeRepository) {
@@ -150,7 +151,7 @@ let EmployeeService = class EmployeeService extends services_1.LegacyBaseService
       `, { contractTypes: [contract_type_enum_1.EContractType.DEFINITE, contract_type_enum_1.EContractType.INDEFINITE] });
         queryBuilder.andWhere(`${empEntityName}.isDeleted = :isDeleted AND ${empEntityName}.active = :active`, { isDeleted: false, active: true });
         this.filterEmployee(queryBuilder, filterEmployee);
-        queryBuilder.select([
+        queryBuilder.select((0, utils_1.uniqueArray)([
             `${empEntityName}.id`,
             `${empEntityName}.companyId`,
             `${empEntityName}.joinDate`,
@@ -181,7 +182,7 @@ let EmployeeService = class EmployeeService extends services_1.LegacyBaseService
             `${aspNetUserName}.utcOffset`,
             `${empContractAlias}.id`,
             `${empContractAlias}.dateFrom`,
-        ]);
+        ]));
         queryBuilder.orderBy(`${empEntityName}.joinDate`, 'ASC');
         return queryBuilder;
     }
@@ -223,34 +224,16 @@ let EmployeeService = class EmployeeService extends services_1.LegacyBaseService
         const employeeAlias = this.entityName;
         const payrollGroupAlias = payroll_group_entity_1.PayrollGroupEntity.name;
         const queryBuilder = this.employeeRepository.createQueryBuilder(employeeAlias);
-        queryBuilder.innerJoinAndSelect(`${employeeAlias}.payrollGroups`, payrollGroupAlias, `${payrollGroupAlias}.companyId = :companyId 
-      AND ${payrollGroupAlias}.isDeleted = :isDeleted`, { companyId, employeeId, isDeleted: false });
+        queryBuilder.innerJoin(`${employeeAlias}.payrollGroups`, payrollGroupAlias);
         queryBuilder.where(`${employeeAlias}.id = :employeeId
       AND ${employeeAlias}.companyId = :companyId 
       AND ${employeeAlias}.isDeleted = :isDeleted
       AND ${employeeAlias}.active = :active`, { companyId, employeeId, isDeleted: false, active: true });
-        const employeeSelectedFields = [
-            'id',
-            'employeeNo',
-            'employeeRef',
-            'fullNameEn',
-            'fullNameLocal',
-        ];
-        const payrollGroupSelectedFields = [
-            'id',
-            'code',
-            'name',
-            'mon',
-            'tue',
-            'wed',
-            'thu',
-            'fri',
-            'sat',
-            'sun',
-        ];
-        queryBuilder.select([
-            ...employeeSelectedFields.map(field => `${employeeAlias}.${field}`),
-            ...payrollGroupSelectedFields.map(field => `${payrollGroupAlias}.${field}`),
+        queryBuilder.select((0, employee_fields_for_common_info_util_1.employeeFieldsForCommonInfo)(employeeAlias));
+        queryBuilder.addSelect([
+            ...(0, payroll_group_fieds_for_calculate_day_leaveutil_1.payrollGroupFieldsForCalculateDayLeave)(payrollGroupAlias),
+            `${payrollGroupAlias}.code`,
+            `${payrollGroupAlias}.name`,
         ]);
         return queryBuilder.getMany();
     }
@@ -263,8 +246,8 @@ let EmployeeService = class EmployeeService extends services_1.LegacyBaseService
             : employeeIds;
         const ltbAlias = leave_type_balance_entity_1.LeaveTypeBalanceEntity.name;
         const ltAlias = leave_type_entity_1.LeaveTypeEntity.name;
-        const employeeAlias = employee_entity_1.EmployeeEntity.name;
         const employeeQueryBuilder = this.createBaseQueryBuilder(query);
+        const employeeAlias = employeeQueryBuilder.alias;
         return this.getRawByQuery({ ...query }, () => {
             employeeQueryBuilder.leftJoinAndMapMany(`${employeeAlias}.leaveTypes`, leave_type_entity_1.LeaveTypeEntity, ltAlias, `${ltAlias}.companyId = ${employeeAlias}.companyId`);
             employeeQueryBuilder.leftJoinAndMapOne(`${employeeAlias}.leaveTypeBalances`, leave_type_balance_entity_1.LeaveTypeBalanceEntity, ltbAlias, `${ltbAlias}.employeeId = "${employeeAlias}"."id"
@@ -281,14 +264,14 @@ let EmployeeService = class EmployeeService extends services_1.LegacyBaseService
                 employeeQueryBuilder.andWhere(`${employeeAlias}.id IN (:...listEmployeeIds)`, { listEmployeeIds });
             }
             employeeQueryBuilder
-                .select(`${employee_entity_1.EmployeeEntity.name}.id`, 'id')
-                .addSelect(`${employee_entity_1.EmployeeEntity.name}.fullNameLocal`, 'fullNameLocal')
-                .addSelect(`${employee_entity_1.EmployeeEntity.name}.fullNameEn`, 'fullNameEn')
-                .addSelect(`${employee_entity_1.EmployeeEntity.name}.employeeRef`, 'employeeRef')
+                .select(`${employeeAlias}.id`, 'id')
+                .addSelect(`${employeeAlias}.fullNameLocal`, 'fullNameLocal')
+                .addSelect(`${employeeAlias}.fullNameEn`, 'fullNameEn')
+                .addSelect(`${employeeAlias}.employeeRef`, 'employeeRef')
                 .addSelect(`${ltbAlias}.balance`, 'ltBalance')
                 .addSelect(`${ltAlias}.id`, 'ltId')
                 .addSelect(`${ltAlias}.name`, 'ltName');
-            employeeQueryBuilder.addOrderBy(`${employee_entity_1.EmployeeEntity.name}.${sort}`, order);
+            employeeQueryBuilder.addOrderBy(`${employeeAlias}.${sort}`, order);
             employeeQueryBuilder.addOrderBy(`LOWER(${ltAlias}.name)`, 'ASC');
             return employeeQueryBuilder;
         });
@@ -666,7 +649,7 @@ let EmployeeService = class EmployeeService extends services_1.LegacyBaseService
                     },
                 },
             },
-            where: { employeeRef: (0, typeorm_2.In)(employeeRefs), companyId },
+            where: { employeeRef: (0, typeorm_2.In)(employeeRefs), companyId, isDeleted: false },
         });
         return employees;
     }

@@ -22,6 +22,7 @@ const enums_1 = require("./common/enums");
 const global_exception_filter_1 = require("./common/filters/global-exception.filter");
 const interceptors_1 = require("./common/interceptors");
 const assign_start_ms_middleware_1 = require("./common/middlewares/assign-start-ms.middleware");
+const config_2 = require("./config");
 const app_config_1 = require("./config/app.config");
 const database_module_1 = require("./core/database/database.module");
 const encryption_1 = require("./core/encryption");
@@ -100,7 +101,7 @@ exports.AppModule = AppModule = __decorate([
             config_1.ConfigModule.forRoot({
                 envFilePath: ['.env'],
                 isGlobal: true,
-                load: [app_config_1.appConfig],
+                load: [app_config_1.appConfig, config_2.encryptionConfig],
             }),
             schedule_1.ScheduleModule.forRoot(),
             database_module_1.DatabaseModule.forRoot(['typeorm', 'mongoose']),

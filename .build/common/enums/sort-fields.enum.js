@@ -5,6 +5,10 @@ var ELeaveSortFields;
 (function (ELeaveSortFields) {
     ELeaveSortFields["employeeRef"] = "employee.employeeRef";
     ELeaveSortFields["fullNameLocal"] = "employee.fullNameLocal";
+    ELeaveSortFields["costCenterName"] = "cost_center.name";
+    ELeaveSortFields["costCenterCode"] = "cost_center.code";
+    ELeaveSortFields["orgElementName"] = "organization_structure.name";
+    ELeaveSortFields["orgElementCode"] = "organization_structure.code";
     ELeaveSortFields["fullNameEn"] = "employee.fullNameEn";
     ELeaveSortFields["paidLeave"] = "leaveType.paidLeave";
     ELeaveSortFields["leaveTypeCode"] = "leaveType.code";

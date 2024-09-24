@@ -52,11 +52,6 @@ export declare class LeaveTypeService extends LegacyBaseService<LeaveTypeEntity>
         authInfo: IAuthInfo;
         companyId: number;
         query: LeaveTypeBalancePaginationDto;
-        option?: Partial<{
-            joinLeaveType: boolean;
-            orderLeaveType: boolean;
-            selection?: string[];
-        }>;
     }): Promise<PaginationResponseDto<EmployeeEntity>>;
     getLeaveTypeBalancesByQuery(payload: {
         authInfo: IAuthInfo;

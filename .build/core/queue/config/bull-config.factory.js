@@ -27,9 +27,8 @@ let BullConfigFactory = class BullConfigFactory {
                 password: this.redisConfig.password,
             },
             defaultJobOptions: {
-                removeOnComplete: 1000,
-                removeOnFail: 5000,
-                attempts: 3,
+                removeOnFail: true,
+                removeOnComplete: true,
             },
         };
     }

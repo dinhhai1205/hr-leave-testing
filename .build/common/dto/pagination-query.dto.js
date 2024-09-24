@@ -24,6 +24,7 @@ class PaginationQueryDto {
         this.sorts = [];
         this.order = enums_1.EOrder.DESC;
         this.isSelectAll = false;
+        this.countTotalEntities = true;
     }
 }
 exports.PaginationQueryDto = PaginationQueryDto;
@@ -116,4 +117,13 @@ __decorate([
     (0, decorators_1.TransformStringToBoolean)(),
     __metadata("design:type", Boolean)
 ], PaginationQueryDto.prototype, "isSelectAll", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        enum: enums_1.EBoolean,
+        description: 'When `countTotalEntities` is false, default `itemCount` is 0',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, decorators_1.TransformStringToBoolean)(),
+    __metadata("design:type", Boolean)
+], PaginationQueryDto.prototype, "countTotalEntities", void 0);
 //# sourceMappingURL=pagination-query.dto.js.map

@@ -17,15 +17,23 @@ exports.LeaveModuleApiLogProducer = void 0;
 const bullmq_1 = require("@nestjs/bullmq");
 const common_1 = require("@nestjs/common");
 const bullmq_2 = require("bullmq");
+const enums_1 = require("../../../common/enums");
+const config_1 = require("../../../config");
 const constants_1 = require("../constants");
 let LeaveModuleApiLogProducer = LeaveModuleApiLogProducer_1 = class LeaveModuleApiLogProducer {
-    constructor(queue) {
+    constructor(queue, appConfig) {
         this.queue = queue;
+        this.appConfig = appConfig;
         this.logger = new common_1.Logger(LeaveModuleApiLogProducer_1.name);
     }
     async addCreateLeaveModuleApiLogJob(jobData) {
+        const nodeEnv = this.appConfig.nodeEnv;
+        const { method = '', url = '', statusMessage = '' } = jobData;
         try {
-            await this.queue.add(constants_1.QUEUE.LEAVE_MODULE_API_LOG.PROCESS.CREATE_API_LOG, jobData);
+            if ((nodeEnv === enums_1.ENodeEnv.STAGING || nodeEnv === enums_1.ENodeEnv.PRODUCTION) &&
+                !this.isCannotFoundApiPathError(method, url, statusMessage)) {
+                await this.queue.add(constants_1.QUEUE.LEAVE_MODULE_API_LOG.PROCESS.CREATE_API_LOG, jobData);
+            }
             return;
         }
         catch (error) {
@@ -34,11 +42,15 @@ let LeaveModuleApiLogProducer = LeaveModuleApiLogProducer_1 = class LeaveModuleA
         finally {
         }
     }
+    isCannotFoundApiPathError(method, url, errMsg) {
+        return errMsg.startsWith(`Cannot ${method} ${url}`);
+    }
 };
 exports.LeaveModuleApiLogProducer = LeaveModuleApiLogProducer;
 exports.LeaveModuleApiLogProducer = LeaveModuleApiLogProducer = LeaveModuleApiLogProducer_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, bullmq_1.InjectQueue)(constants_1.QUEUE.LEAVE_MODULE_API_LOG.PROCESSOR)),
-    __metadata("design:paramtypes", [bullmq_2.Queue])
+    __param(1, (0, config_1.InjectAppConfig)()),
+    __metadata("design:paramtypes", [bullmq_2.Queue, Object])
 ], LeaveModuleApiLogProducer);
 //# sourceMappingURL=leave-module-api-log.producer.js.map

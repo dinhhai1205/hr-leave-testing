@@ -88,14 +88,14 @@ let ImportExportTimeSheetAdjustmentExcelFileService = class ImportExportTimeShee
     }
     async handleValidateAndFormatData(companyId, payrollHeaderId, data) {
         const listEmployeeRef = data.map(itemData => {
-            return itemData[constants_1.EMPLOYEE_REF];
+            return `${itemData[constants_1.EMPLOYEE_REF]}`;
         });
         const employees = await this.employeeService.getEmployeeByEmployeeRef(companyId, listEmployeeRef);
         const result = [];
         const listErrorRows = [];
         for (let index = 0; index < data.length; index++) {
             const itemData = data[index];
-            const employeeRef = itemData[constants_1.EMPLOYEE_REF] ?? '';
+            const employeeRef = `${itemData[constants_1.EMPLOYEE_REF]}` || '';
             const adjustmentTypes = itemData[constants_1.ADDJUSTMENT_TYPES] ?? '';
             const payElementMapping = itemData[constants_1.PAY_ELEMENT_MAPPING] ?? '';
             const payElementMappingName = payElementMapping.toLowerCase();

@@ -8,10 +8,27 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AssignStartMsMiddleware = void 0;
 const common_1 = require("@nestjs/common");
+const jsonwebtoken_1 = require("jsonwebtoken");
+const iam_1 = require("../../core/iam");
+const utils_1 = require("../utils");
 let AssignStartMsMiddleware = class AssignStartMsMiddleware {
     use(req, res, next) {
-        const start = Date.now();
-        Object.assign(req, { startMs: start });
+        const startMs = Date.now();
+        const bearer = (0, utils_1.extractTokenFromHeader)(req);
+        let jwtDecoded = bearer ? (0, jsonwebtoken_1.decode)(bearer) : '(empty)';
+        if (jwtDecoded && typeof jwtDecoded !== 'string') {
+            jwtDecoded = {
+                sub: jwtDecoded?.sub,
+                utcOffset: jwtDecoded?.[iam_1.JWT_PAYLOAD_USER_UTC_OFFSET_KEY],
+                ranking: jwtDecoded?.[iam_1.JWT_PAYLOAD_USER_RANKING_KEY],
+                exp: new Date((jwtDecoded?.exp ?? 0) * 1000),
+            };
+        }
+        Object.assign(req, {
+            [iam_1.REQ_CURRENT_CONTEXT_KEY]: { jwtDecoded },
+            startMs,
+            authInfo: {},
+        });
         next();
     }
 };

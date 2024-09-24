@@ -544,6 +544,9 @@ let WorkScheduleAssignmentService = class WorkScheduleAssignmentService extends 
             .andWhere(`${workScheduleAssignmentAlias}.date IN (:...date)`, { date })
             .andWhere(`${workScheduleAssignmentAlias}.companyId = :companyId`, {
             companyId,
+        })
+            .andWhere(`${workScheduleAssignmentAlias}.is_unpublished = :isUnpublished`, {
+            isUnpublished: false,
         });
         const result = await queryBuilder.getMany();
         if (!result || result.length === 0) {
@@ -568,6 +571,7 @@ let WorkScheduleAssignmentService = class WorkScheduleAssignmentService extends 
             `${workScheduleAssignmentAlias}.id`,
             `${workScheduleAssignmentAlias}.employeeId`,
             `${workScheduleAssignmentAlias}.workScheduleId`,
+            `${workScheduleAssignmentAlias}.date`,
         ])
             .leftJoin(`${workScheduleAssignmentAlias}.workSchedule`, workScheduleAlias, `${workScheduleAlias}.isDeleted = :isDeleted 
         AND 
@@ -609,7 +613,10 @@ let WorkScheduleAssignmentService = class WorkScheduleAssignmentService extends 
             if (!workScheduleMap[assignmentDate]) {
                 workScheduleMap[assignmentDate] = [];
             }
-            workScheduleMap[assignmentDate].push(workSchedule);
+            const existingSchedule = workScheduleMap[assignmentDate].find(schedule => schedule.id === workSchedule.id);
+            if (!existingSchedule) {
+                workScheduleMap[assignmentDate].push(workSchedule);
+            }
         });
         return workScheduleMap;
     }

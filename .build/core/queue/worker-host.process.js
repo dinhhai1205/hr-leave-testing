@@ -13,11 +13,16 @@ exports.WorkerHostProcessor = void 0;
 const bullmq_1 = require("@nestjs/bullmq");
 const common_1 = require("@nestjs/common");
 const bullmq_2 = require("bullmq");
+require("dotenv/config");
 const moment = require("moment");
+const enums_1 = require("../../common/enums");
 class WorkerHostProcessor extends bullmq_1.WorkerHost {
     constructor() {
         super(...arguments);
-        this.logger = new common_1.Logger(WorkerHostProcessor.name);
+        this.logger = process.env.NODE_ENV === enums_1.ENodeEnv.STAGING &&
+            process.env.APP_TYPE === enums_1.EAppType.HRFORTE
+            ? { log: (lg) => lg, error: (msg) => msg }
+            : new common_1.Logger(WorkerHostProcessor.name);
     }
     onCompleted(job) {
         const { id, name, queueName, finishedOn, returnvalue } = job;

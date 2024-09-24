@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LeaveModuleApiLogEntity = void 0;
 const typeorm_1 = require("typeorm");
 const enums_1 = require("../enums");
+const varchar_transformer_1 = require("../utils/tranformers/varchar.transformer");
 let LeaveModuleApiLogEntity = class LeaveModuleApiLogEntity {
 };
 exports.LeaveModuleApiLogEntity = LeaveModuleApiLogEntity;
@@ -64,15 +65,15 @@ __decorate([
     __metadata("design:type", String)
 ], LeaveModuleApiLogEntity.prototype, "userEmail", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, transformer: (0, varchar_transformer_1.varcharTransformer)() }),
     __metadata("design:type", String)
 ], LeaveModuleApiLogEntity.prototype, "authInfo", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, transformer: (0, varchar_transformer_1.varcharTransformer)() }),
     __metadata("design:type", String)
 ], LeaveModuleApiLogEntity.prototype, "cause", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, transformer: (0, varchar_transformer_1.varcharTransformer)() }),
     __metadata("design:type", String)
 ], LeaveModuleApiLogEntity.prototype, "currentContext", void 0);
 exports.LeaveModuleApiLogEntity = LeaveModuleApiLogEntity = __decorate([

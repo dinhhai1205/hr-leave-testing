@@ -285,6 +285,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         const autoDeductionDTOs = updateWorkScheduleBodyDTO.autoDeductions;
         const breakRuleDTOs = updateWorkScheduleBodyDTO.breaks;
         const daySchedulesDTOs = updateWorkScheduleBodyDTO.daySchedules;
+        console.log({ daySchedulesDTOs });
         const autoDeductionsDeleted = updateWorkScheduleBodyDTO.autoDeductionsDeleted;
         const breaksDeleted = updateWorkScheduleBodyDTO.breaksDeleted;
         const daySchedulesDeleted = updateWorkScheduleBodyDTO.daySchedulesDeleted;
@@ -2494,8 +2495,10 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 date: listDays,
                 employeeIds,
             });
+            console.log({ listWorkSchedules });
             const result = listDays.map(day => {
                 const workScheduleEntity = listWorkSchedules[day];
+                console.log({ workScheduleEntity });
                 const workScheduleMap = workScheduleEntity?.map(ws => {
                     const assignees = ws.assignees;
                     const groupAssignees = ws.groupAssignees;
@@ -2557,13 +2560,37 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 });
                 return { date: day, workScheduleEntity: workScheduleMap ?? [] };
             });
+            result.map(item => {
+                const workSchedules = item.workScheduleEntity;
+                const mergedWorkSchedules = workSchedules.reduce((acc, current) => {
+                    const existingItem = acc.find(item => item.id === current.id);
+                    if (existingItem) {
+                        existingItem.assignees = {
+                            ...existingItem.assignees,
+                            ...current.assignees,
+                        };
+                        existingItem.groupAssignees = {
+                            ...existingItem.groupAssignees,
+                            ...current.groupAssignees,
+                        };
+                    }
+                    else {
+                        acc.push(current);
+                    }
+                    return acc;
+                }, []);
+                return {
+                    ...item,
+                    workScheduleEntity: mergedWorkSchedules,
+                };
+            });
             return new dto_1.PaginationResponseDto({
                 paginationDto: {
                     take,
                     page,
                     isSelectAll: false,
                 },
-                itemCount: result.length,
+                itemCount: listDayBetweenStartEnd.length,
                 data: result,
             });
         }
@@ -2578,7 +2605,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                     page,
                     isSelectAll: false,
                 },
-                itemCount: result.length,
+                itemCount: listDayBetweenStartEnd.length,
                 data: result,
             });
         }

@@ -45,7 +45,7 @@ let LoggingInterceptor = LoggingInterceptor_1 = class LoggingInterceptor {
                     key: decorators_1.SKIP_FLAG,
                 });
                 if (skipFlag && skipFlag.includes(enums_1.ESkipFlag.API_LOG)) {
-                    return;
+                    return '';
                 }
                 const { statusCode, statusMessage } = response;
                 const startMs = request['startMs'];
@@ -55,13 +55,12 @@ let LoggingInterceptor = LoggingInterceptor_1 = class LoggingInterceptor {
                     statusMessage,
                     timeMs: Date.now() - startMs,
                 };
-                if (nodeEnv !== enums_1.ENodeEnv.PRODUCTION && nodeEnv !== enums_1.ENodeEnv.STAGING) {
+                if (nodeEnv === enums_1.ENodeEnv.LOCAL) {
                     this.logger.log((0, extract_data_from_req_util_1.extractApiLogObj)(apiLogObj, {
                         statusCode: apiLogObj.statusCode,
                         statusMessage: apiLogObj.statusMessage,
                         timeMs: apiLogObj.timeMs,
                     }));
-                    return;
                 }
                 return this.leaveModuleApiLogProducer.addCreateLeaveModuleApiLogJob(apiLogObj);
             },

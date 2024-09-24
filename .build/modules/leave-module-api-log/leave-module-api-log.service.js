@@ -19,13 +19,38 @@ const typeorm_1 = require("@nestjs/typeorm");
 const moment = require("moment");
 const typeorm_2 = require("typeorm");
 const leave_module_api_log_entity_1 = require("../../core/database/entities/leave-module-api-log.entity");
+const encryption_1 = require("../../core/encryption");
+const aws_1 = require("../../libs/aws");
 let LeaveModuleApiLogService = class LeaveModuleApiLogService {
-    constructor(leaveModuleApiLogRepo) {
+    constructor(leaveModuleApiLogRepo, awsS3Service, encryptionService) {
         this.leaveModuleApiLogRepo = leaveModuleApiLogRepo;
+        this.awsS3Service = awsS3Service;
+        this.encryptionService = encryptionService;
+        this.rootFolder = 'z_api_log';
     }
     async create(args) {
-        const entity = this.leaveModuleApiLogRepo.create(args);
-        return this.leaveModuleApiLogRepo.save(entity);
+        const { files, ...params } = args;
+        const entity = this.leaveModuleApiLogRepo.create(params);
+        const apiLog = await this.leaveModuleApiLogRepo.save(entity);
+        if (files?.length && apiLog) {
+            const { id, companyId } = apiLog;
+            const companyFolder = `${companyId || 'unknown'}`;
+            const promisesStack = [];
+            for (const file of files) {
+                promisesStack.push(this.awsS3Service.putObjectToS3({
+                    Key: `${this.rootFolder}/${companyFolder}/${id}-${file.originalname}`,
+                    Body: Buffer.from(file.buffer),
+                    ContentLength: Buffer.from(file.buffer).byteLength,
+                }));
+            }
+            try {
+                await Promise.allSettled(promisesStack);
+            }
+            catch (error) {
+            }
+            finally {
+            }
+        }
     }
     async deleteLogOverThreeMonths() {
         await this.leaveModuleApiLogRepo.delete({
@@ -43,6 +68,8 @@ __decorate([
 exports.LeaveModuleApiLogService = LeaveModuleApiLogService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(leave_module_api_log_entity_1.LeaveModuleApiLogEntity)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        aws_1.AwsS3Service,
+        encryption_1.EncryptionService])
 ], LeaveModuleApiLogService);
 //# sourceMappingURL=leave-module-api-log.service.js.map

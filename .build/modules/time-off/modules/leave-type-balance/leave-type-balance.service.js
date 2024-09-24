@@ -204,8 +204,8 @@ let LeaveTypeBalanceService = class LeaveTypeBalanceService extends services_1.L
         const empAlias = entities_1.EmployeeEntity.name;
         const ltbQueryBuilder = this.leaveTypeBalanceRepository
             .createQueryBuilder(ltbAlias)
-            .innerJoinAndSelect(`${ltbAlias}.employee`, empAlias, `${empAlias}.isDeleted = :isDeleted AND ${empAlias}.active = :active`, { isDeleted: false, active: true })
-            .innerJoinAndSelect(`${ltbAlias}.leaveType`, ltAlias, `${ltAlias}.isDeleted = :isDeleted AND ${ltAlias}.active = :active`, { isDeleted: false, active: true })
+            .innerJoin(`${ltbAlias}.employee`, empAlias, `${empAlias}.isDeleted = :isDeleted AND ${empAlias}.active = :active`, { isDeleted: false, active: true })
+            .innerJoin(`${ltbAlias}.leaveType`, ltAlias, `${ltAlias}.isDeleted = :isDeleted AND ${ltAlias}.active = :active`, { isDeleted: false, active: true })
             .andWhere(`${ltbAlias}.isDeleted = :isDeleted 
         AND ${ltbAlias}.companyId = :companyId
         AND ${empAlias}.employeeRef IN (:...listEmployeeRef)

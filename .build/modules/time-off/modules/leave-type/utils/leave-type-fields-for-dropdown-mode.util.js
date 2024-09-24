@@ -5,7 +5,9 @@ function leaveTypeFieldsForDropdownMode(alias) {
     return [
         `${alias}.id`,
         `${alias}.name`,
+        `${alias}.code`,
         `${alias}.color`,
+        `${alias}.remark`,
         `${alias}.isSpecial`,
         `${alias}.parentId`,
         `${alias}.createdOn`,

@@ -5,4 +5,5 @@ export interface IRequest extends Request {
     authInfo: IAuthInfo;
     file: IMulterFileUploaded;
     files: IMulterFileUploaded[];
+    startMs: number;
 }

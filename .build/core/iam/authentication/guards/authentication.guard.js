@@ -48,11 +48,12 @@ let AuthenticationGuard = AuthenticationGuard_1 = class AuthenticationGuard {
         const ctxClass = context.getClass();
         const ctxHandler = context.getHandler();
         const request = context.switchToHttp().getRequest();
-        Object.assign(request, {
-            [iam_constant_1.REQ_CURRENT_CONTEXT_KEY]: {
-                class: ctxClass.name,
-                handler: ctxHandler.name,
-            },
+        if (!request[iam_constant_1.REQ_CURRENT_CONTEXT_KEY]) {
+            Object.assign(request, { [iam_constant_1.REQ_CURRENT_CONTEXT_KEY]: {} });
+        }
+        Object.assign(request[iam_constant_1.REQ_CURRENT_CONTEXT_KEY], {
+            class: ctxClass.name,
+            handler: ctxHandler.name,
         });
         const authTypes = this.reflector.getAllAndOverride(auth_decorator_1.AUTH_TYPE_KEY, [
             ctxHandler,

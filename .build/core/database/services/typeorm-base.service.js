@@ -33,7 +33,7 @@ class TypeOrmBaseService {
     }
     async getEntitiesByQuery(args) {
         const { paginationQueryDto, queryBuilder, querySearchFields, selectColumns, } = args;
-        const { page, take, q: querySearchString, isDeleted = false, ids, sorts, createdFrom, createdTo, sort, isSelectAll, order, } = paginationQueryDto;
+        const { page, take, q: querySearchString, isDeleted = false, ids, sorts, createdFrom, createdTo, sort, isSelectAll, order, countTotalEntities = true, } = paginationQueryDto;
         const alias = queryBuilder.alias;
         const sqlBuilder = new where_condition_builder_util_1.WhereConditionBuilder(alias);
         queryBuilder.andWhere(sqlBuilder
@@ -108,7 +108,9 @@ class TypeOrmBaseService {
         if (isSelectAll !== true) {
             queryBuilder.take(take).skip((page - 1) * take);
         }
-        const [entities, count] = await queryBuilder.getManyAndCount();
+        const [entities, count] = countTotalEntities
+            ? await queryBuilder.getManyAndCount()
+            : [await queryBuilder.getMany(), 0];
         return new dto_1.PaginationResponseDto({
             paginationDto: paginationQueryDto,
             itemCount: count,
