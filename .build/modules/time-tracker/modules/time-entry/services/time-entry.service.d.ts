@@ -10,6 +10,7 @@ import { PrtrxHdrService } from '../../../../payroll/modules/prtrx-hdr/prtrx-hdr
 import { TimeEntryEntity } from '../time-entry.entity';
 import { GroupMappingService } from '../../group-mapping/group-mapping.service';
 import { TimeTrackerEmployeeService } from '../../employee/employee.service';
+import { PayrollTimeSheetServiceV2 } from '../../payroll-timesheet/payroll-timesheet-v2.service';
 export declare class TimeEntryService {
     private readonly apiService;
     private readonly employeeMappingService;
@@ -19,7 +20,8 @@ export declare class TimeEntryService {
     private readonly prtrxHdrService;
     private readonly groupMappingService;
     private readonly timeTrackerEmployeeService;
-    constructor(apiService: TimeTrackerApiService, employeeMappingService: EmployeeMappingService, workScheduleService: WorkScheduleService, leaveService: LeaveService, timeSheetAdjustmentService: TimeSheetAdjustmentService, prtrxHdrService: PrtrxHdrService, groupMappingService: GroupMappingService, timeTrackerEmployeeService: TimeTrackerEmployeeService);
+    private readonly payrollTimesheetService;
+    constructor(apiService: TimeTrackerApiService, employeeMappingService: EmployeeMappingService, workScheduleService: WorkScheduleService, leaveService: LeaveService, timeSheetAdjustmentService: TimeSheetAdjustmentService, prtrxHdrService: PrtrxHdrService, groupMappingService: GroupMappingService, timeTrackerEmployeeService: TimeTrackerEmployeeService, payrollTimesheetService: PayrollTimeSheetServiceV2);
     createTimeEntry(createTimeEntryBodyDto: CreateTimeEntryBodyDto, ttCompanyId: string, companyId: number): Promise<TimeEntryResponseDTO | TimeEntryResponseDTO[]>;
     handleSummaryWeekLyTrackedHour(companyId: number, ttCompanyId: string, employeeId: number, startDate: string, endDate: string): Promise<any>;
     handleGetTimeEntriesSummarizeInDate(companyId: number, ttCompanyId: string, employeeId: number, query: GetDetailTimeEntryQueryDto): Promise<{

@@ -21,8 +21,9 @@ const moment = require("moment");
 const prtrx_hdr_service_1 = require("../../../../payroll/modules/prtrx-hdr/prtrx-hdr.service");
 const group_mapping_service_1 = require("../../group-mapping/group-mapping.service");
 const employee_service_1 = require("../../employee/employee.service");
+const payroll_timesheet_v2_service_1 = require("../../payroll-timesheet/payroll-timesheet-v2.service");
 let TimeEntryService = class TimeEntryService {
-    constructor(apiService, employeeMappingService, workScheduleService, leaveService, timeSheetAdjustmentService, prtrxHdrService, groupMappingService, timeTrackerEmployeeService) {
+    constructor(apiService, employeeMappingService, workScheduleService, leaveService, timeSheetAdjustmentService, prtrxHdrService, groupMappingService, timeTrackerEmployeeService, payrollTimesheetService) {
         this.apiService = apiService;
         this.employeeMappingService = employeeMappingService;
         this.workScheduleService = workScheduleService;
@@ -31,6 +32,7 @@ let TimeEntryService = class TimeEntryService {
         this.prtrxHdrService = prtrxHdrService;
         this.groupMappingService = groupMappingService;
         this.timeTrackerEmployeeService = timeTrackerEmployeeService;
+        this.payrollTimesheetService = payrollTimesheetService;
     }
     async createTimeEntry(createTimeEntryBodyDto, ttCompanyId, companyId) {
         const employeeMapping = await this.employeeMappingService.getManyEmployeeMappingByIds({
@@ -479,6 +481,7 @@ let TimeEntryService = class TimeEntryService {
         const data = await this.handleCalculateUnpaidDaysTimeTracker(employeeIds, startDate, endDate, companyId, ttCompanyId);
         const unPaidDayData = data.UnpaidInfo;
         const result = await this.timeSheetAdjustmentService.createMultiAdjustmentsFromTimeTracker(unPaidDayData, payrollHeaderId, companyId, userEmail);
+        await this.payrollTimesheetService.updatePayrollsWorksheduledDays(payrollHeaderId, companyId, userEmail);
         return { result };
     }
     async handleCalculateTotalClockInDate(employeeId, companyId, timeTrackerCompanyId, date) {
@@ -507,6 +510,7 @@ exports.TimeEntryService = TimeEntryService = __decorate([
         services_2.TimeSheetAdjustmentService,
         prtrx_hdr_service_1.PrtrxHdrService,
         group_mapping_service_1.GroupMappingService,
-        employee_service_1.TimeTrackerEmployeeService])
+        employee_service_1.TimeTrackerEmployeeService,
+        payroll_timesheet_v2_service_1.PayrollTimeSheetServiceV2])
 ], TimeEntryService);
 //# sourceMappingURL=time-entry.service.js.map

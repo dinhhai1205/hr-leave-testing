@@ -186,6 +186,7 @@ export declare class PayrollTimeSheetServiceV2 extends TypeOrmBaseService<Payrol
     }>;
     private getDayToProrate;
     getPayrollTimesheetIdByPrtrxHdrId(prtrxHdrId: number, companyId: number): Promise<PayrollTimeSheetEntity[]>;
+    getPayrollTimesheetById(payrollTimesheetId: number, companyId: number): Promise<PayrollTimeSheetEntity | null>;
     getPayrollTimesheetIdByEidPrtrxHdrId(employeeIds: number[], prtrxHdrId: number): Promise<PayrollTimeSheetEntity[]>;
     handleValidateHeader(actualHeaders: string[], type: PayCalculationMethod): Promise<void>;
     handleValidateAndFormatData(companyId: number, payrollHeaderId: number, data: {

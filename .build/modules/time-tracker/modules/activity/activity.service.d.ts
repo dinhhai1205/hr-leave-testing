@@ -78,6 +78,31 @@ export declare class ActivityService {
         updatedBy?: string;
         updatedOn?: Date;
     }>;
+    getAllEmployeeAssigneesByActivityId(companyId: number, activityId: string, options: GeneralOptions, paginationQueryDto: AssigneesProjectQueryDto): Promise<{
+        data: {
+            id: string;
+            roleName: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+            groupId?: string;
+            groupName?: string;
+        }[] | {
+            id: number | undefined;
+            roleName: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+            groupId?: string;
+            groupName?: string;
+        }[];
+        page: number;
+        take: number;
+        itemCount: number;
+        pageCount: number;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+    }>;
     getAllGroupAssigneesByActivityId(companyId: number, activityId: string, options: GeneralOptions, paginationQueryDto: AssigneesProjectQueryDto): Promise<{
         data: {
             id: string;

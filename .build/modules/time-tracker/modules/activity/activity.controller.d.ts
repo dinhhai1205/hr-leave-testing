@@ -33,6 +33,31 @@ export declare class ActivityController {
         hasPreviousPage: boolean;
         hasNextPage: boolean;
     }>;
+    getAllEmployeesAssigneesByActivity(companyId: number, activityId: string, { timeTrackerCompanyId }: TimeTrackerMapping, paginationQueryDto: AssigneesProjectQueryDto): Promise<{
+        data: {
+            id: string;
+            roleName: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+            groupId?: string;
+            groupName?: string;
+        }[] | {
+            id: number | undefined;
+            roleName: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+            groupId?: string;
+            groupName?: string;
+        }[];
+        page: number;
+        take: number;
+        itemCount: number;
+        pageCount: number;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+    }>;
     getAllGroupAssigneesByActivity(companyId: number, activityId: string, { timeTrackerCompanyId }: TimeTrackerMapping, paginationQueryDto: AssigneesProjectQueryDto): Promise<{
         data: {
             id: string;

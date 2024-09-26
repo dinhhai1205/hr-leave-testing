@@ -36,6 +36,11 @@ let ActivityController = class ActivityController {
             companyId: timeTrackerCompanyId,
         }, query);
     }
+    getAllEmployeesAssigneesByActivity(companyId, activityId, { timeTrackerCompanyId }, paginationQueryDto) {
+        return this.activityService.getAllEmployeeAssigneesByActivityId(companyId, activityId, {
+            companyId: timeTrackerCompanyId,
+        }, paginationQueryDto);
+    }
     getAllGroupAssigneesByActivity(companyId, activityId, { timeTrackerCompanyId }, paginationQueryDto) {
         return this.activityService.getAllGroupAssigneesByActivityId(companyId, activityId, {
             companyId: timeTrackerCompanyId,
@@ -97,6 +102,21 @@ __decorate([
     __metadata("design:paramtypes", [Number, common_2.PaginationQueryDto, Object]),
     __metadata("design:returntype", void 0)
 ], ActivityController.prototype, "getAllActivities", null);
+__decorate([
+    (0, common_1.Get)('/:activityId/employee-assignees'),
+    (0, iam_1.Auth)(iam_1.AuthType.Bearer, iam_1.AuthType.Permission),
+    (0, iam_1.Permissions)(enums_1.EApiAppMode.ADMIN, enums_1.EPermissionActions.VIEW),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get all group assignees by activityId',
+    }),
+    __param(0, (0, common_1.Param)('companyId')),
+    __param(1, (0, common_1.Param)('activityId', common_1.ParseUUIDPipe)),
+    __param(2, (0, time_tracker_emp_info_decorator_1.TimeTrackerEmpInfo)()),
+    __param(3, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String, Object, dtos_2.AssigneesProjectQueryDto]),
+    __metadata("design:returntype", void 0)
+], ActivityController.prototype, "getAllEmployeesAssigneesByActivity", null);
 __decorate([
     (0, common_1.Get)('/:activityId/group-assignees'),
     (0, iam_1.Auth)(iam_1.AuthType.Bearer, iam_1.AuthType.Permission),

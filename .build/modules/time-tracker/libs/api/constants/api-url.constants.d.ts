@@ -175,6 +175,10 @@ export declare const TIME_TRACKER_URL: {
         method: string;
         url: string;
     };
+    GET_ALL_ACTIVITY_EMPLOYEE_ASSIGNEE: {
+        method: string;
+        url: string;
+    };
     GET_ALL_ACTIVITY_GROUP_ASSIGNEE: {
         method: string;
         url: string;

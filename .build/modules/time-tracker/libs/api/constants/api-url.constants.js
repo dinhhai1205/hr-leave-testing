@@ -178,6 +178,10 @@ exports.TIME_TRACKER_URL = {
         method: 'GET',
         url: '/:companyId/activity/employees',
     },
+    GET_ALL_ACTIVITY_EMPLOYEE_ASSIGNEE: {
+        method: 'GET',
+        url: ':companyId/activity/:activityId/employee-assignees',
+    },
     GET_ALL_ACTIVITY_GROUP_ASSIGNEE: {
         method: 'GET',
         url: ':companyId/activity/:activityId/group-assignees',

@@ -345,7 +345,7 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
                 type: 'GET_EMPLOYEE_CLOCK_INFO_WITH_EMPLOYEE_ID_PARAMS',
                 segments: {
                     companyId: options.companyId,
-                    employeeId: employeeMapping[0].id,
+                    employeeId: employeeMapping[0].timeTrackerEmployeeId,
                 },
             });
         }

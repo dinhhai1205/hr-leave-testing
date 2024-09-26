@@ -398,7 +398,10 @@ let PayrollTimeSheetServiceV2 = class PayrollTimeSheetServiceV2 extends database
                     const totalProrations = payroll.employee.payCalcMet === 1
                         ? totalScheduledWorkDays
                         : totalScheduledWorkHours;
-                    totalPayrollRegularWorkDays = totalProrations - unpaidDays;
+                    totalPayrollRegularWorkDays =
+                        payroll.employee.payCalcMet === 1
+                            ? totalProrations - unpaidDays
+                            : totalProrations;
                 }
             }
             return {
@@ -1019,6 +1022,18 @@ let PayrollTimeSheetServiceV2 = class PayrollTimeSheetServiceV2 extends database
         });
         return result;
     }
+    async getPayrollTimesheetById(payrollTimesheetId, companyId) {
+        const payrollAlias = database_1.ETableName.PAYROLL_TIME_SHEET;
+        const employeeAlias = 'employee';
+        const payrollGroupAlias = database_1.ETableName.PAYROLL_GROUP;
+        const queryBuilder = this.payrollTimeSheetRepository
+            .createQueryBuilder(payrollAlias)
+            .leftJoinAndSelect(`${payrollAlias}.employee`, employeeAlias, `${employeeAlias}.id = ${payrollAlias}.employee_id`, { isDeleted: false })
+            .leftJoinAndSelect(`${employeeAlias}.payrollGroups`, payrollGroupAlias, `${payrollGroupAlias}.id = ${employeeAlias}.payroll_group_id AND ${payrollGroupAlias}.is_deleted = :isDeleted`, { isDeleted: false })
+            .where(`${payrollAlias}.id = :payrollTimesheetId AND ${payrollAlias}.is_deleted = :isDeleted AND ${payrollAlias}.company_id = :companyId`, { isDeleted: false, payrollTimesheetId, companyId })
+            .getOne();
+        return queryBuilder;
+    }
     async getPayrollTimesheetIdByEidPrtrxHdrId(employeeIds, prtrxHdrId) {
         const result = this.payrollTimeSheetRepository.find({
             select: { id: true, employeeId: true },
@@ -1515,7 +1530,10 @@ let PayrollTimeSheetServiceV2 = class PayrollTimeSheetServiceV2 extends database
         const totalProrations = payroll.employee.payCalcMet === 1
             ? payroll.totalScheduledWorkDays
             : payroll.totalScheduledWorkHours;
-        return totalProrations - unpaidDays;
+        const totalPayrollRegularWorkDays = payroll.employee.payCalcMet === 1
+            ? totalProrations - unpaidDays
+            : totalProrations;
+        return totalPayrollRegularWorkDays;
     }
     async getDayScheduleOfDay(day, workScheduleId, companyId) {
         const weekDay = (0, common_2.convertDayToWeekDay)(day);

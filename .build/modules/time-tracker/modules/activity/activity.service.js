@@ -104,6 +104,33 @@ let ActivityService = class ActivityService {
         };
         return mappingResult ? mappingResult : data;
     }
+    async getAllEmployeeAssigneesByActivityId(companyId, activityId, options, paginationQueryDto) {
+        const { data } = await this.apiService.request({
+            type: 'GET_ALL_ACTIVITY_EMPLOYEE_ASSIGNEE',
+            segments: { companyId: options.companyId, activityId },
+            params: paginationQueryDto,
+        });
+        if (data) {
+            const { data: assignees } = data;
+            const ttEmployeeIds = assignees?.map(assignee => assignee.id);
+            const employeeMappings = await this.employeeMappingService.getManyEmployeeMappingByTTIds({
+                ttEmployeeIds,
+                companyId,
+            });
+            const ttEmployeesMap = new Map(employeeMappings.map(e => [e.timeTrackerEmployeeId, e.employeeId]));
+            const result = assignees?.map(assignee => {
+                return {
+                    ...assignee,
+                    id: ttEmployeesMap.get(assignee.id),
+                };
+            });
+            return {
+                ...data,
+                data: result ? result : assignees,
+            };
+        }
+        return data;
+    }
     async getAllGroupAssigneesByActivityId(companyId, activityId, options, paginationQueryDto) {
         const { data } = await this.apiService.request({
             type: 'GET_ALL_ACTIVITY_GROUP_ASSIGNEE',
