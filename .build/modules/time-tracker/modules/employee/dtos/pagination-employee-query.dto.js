@@ -20,6 +20,7 @@ class PaginationEmployeeQueryDto {
     constructor() {
         this.workScheduleIds = [];
         this.projectIds = [];
+        this.taskIds = [];
         this.isSelectAll = false;
         this.page = 1;
         this.take = 20;
@@ -48,6 +49,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Array)
 ], PaginationEmployeeQueryDto.prototype, "projectIds", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ isArray: true, type: String }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], PaginationEmployeeQueryDto.prototype, "taskIds", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ enum: common_1.BooleanString, default: false }),
     (0, class_validator_1.IsOptional)(),

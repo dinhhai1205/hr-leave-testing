@@ -61,8 +61,6 @@ export declare class WorkScheduleAssignmentService extends TypeOrmBaseService<Wo
         isExistedAnyRelatedActions: boolean;
         relatedAction: string;
     }>;
-    private formatTime;
-    private paginateResults;
     getWorkScheduleAssignmentByCompanyId(args: {
         companyId: number;
         query: WorkAssignmentQueryDto;
@@ -75,13 +73,18 @@ export declare class WorkScheduleAssignmentService extends TypeOrmBaseService<Wo
         hasNextPage: boolean;
         data: any[];
     }>;
+    private filterByWorkScheduleIds;
+    private filterByOrgPaths;
     private processWorkSchedules;
+    private getEmployeeGroupList;
     private formatEmployeeSchedules;
     private generateDaySchedules;
     private findApplicableSchedule;
-    private mapDayOfWeek;
     private handleSearchAssignment;
     private checkIsInWorkScheduleDefault;
+    private formatTime;
+    private paginateResults;
+    private mapDayOfWeek;
     publishWorkScheduleAssignment(params: {
         companyId: number;
         userEmail: string;
@@ -99,6 +102,7 @@ export declare class WorkScheduleAssignmentService extends TypeOrmBaseService<Wo
         dateTo: string;
         workScheduleId: number;
         verb: string;
+        workScheduleName: string;
     }): Promise<void>;
     getWorkScheduleAssignmentsByEmployeeIdWithDate(employeeId: number, companyId: number, date: string): Promise<WorkScheduleAssignmentEntity | null>;
     getWorkScheduleAssignmentsByEmployeeId(employeeId: number, companyId: number): Promise<WorkScheduleAssignmentEntity[]>;

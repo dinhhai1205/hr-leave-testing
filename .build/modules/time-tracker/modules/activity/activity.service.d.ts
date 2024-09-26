@@ -1,12 +1,13 @@
 import { TimeTrackerApiService } from '../../libs/api/api.service';
 import { GeneralOptions } from '../../common/types';
 import { ActivityEntity } from './activity.entity';
-import { ArchivedActivity, CreateActivityDto, UpdateActivityBodyDto } from './dtos';
+import { AddNewActivityAssigneeDto, ArchivedActivity, CreateActivityDto, UpdateActivityBodyDto } from './dtos';
 import { PaginationQueryDto } from '../../common';
 import { GroupMappingService } from '../group-mapping/group-mapping.service';
 import { AssigneesProjectQueryDto } from '../project/dtos';
 import { EmployeeMappingService } from '../employee-mapping/employee-mapping.service';
 import { CompanyMappingService } from '../company-mapping/company-mapping.service';
+import { RemoveActivityAssigneesDto } from './dtos/remove-assignees.dto';
 export declare class ActivityService {
     private readonly apiService;
     private readonly groupMappingService;
@@ -98,4 +99,12 @@ export declare class ActivityService {
         companyId: number;
         employeeId: number;
     }): Promise<any>;
+    addNewAssigneeToActivity(companyId: number, payload: {
+        payload: AddNewActivityAssigneeDto;
+        activityId: string;
+    }, options: GeneralOptions): Promise<any>;
+    removeMultipleEmployeesOfActivity(companyId: number, payload: {
+        payload: RemoveActivityAssigneesDto;
+        activityId: string;
+    }, options: GeneralOptions): Promise<any>;
 }

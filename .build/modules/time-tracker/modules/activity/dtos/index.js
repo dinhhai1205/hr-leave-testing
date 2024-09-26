@@ -21,4 +21,7 @@ __exportStar(require("./create-activity-payload.dto"), exports);
 __exportStar(require("./get-all-activity-payload.dto"), exports);
 __exportStar(require("./update-activity-body.dto"), exports);
 __exportStar(require("./update-activity-payload.dto"), exports);
+__exportStar(require("./add-new-assignees.dto"), exports);
+__exportStar(require("./add-new-assignees-payload.dto"), exports);
+__exportStar(require("./remove-assignees-payload.dto"), exports);
 //# sourceMappingURL=index.js.map

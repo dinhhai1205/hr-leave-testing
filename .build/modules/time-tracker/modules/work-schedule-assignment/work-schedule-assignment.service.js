@@ -179,6 +179,210 @@ let WorkScheduleAssignmentService = class WorkScheduleAssignmentService extends 
             relatedAction,
         };
     }
+    async getWorkScheduleAssignmentByCompanyId(args) {
+        const { query, companyId } = args;
+        const { startDate, endDate, employeeIds, orgPaths, page = 1, q, take = 20, workScheduleIds, } = query;
+        const workSchedules = await this.workScheduleService.getAllWorkSchedulePublishedForWsAssignment(companyId);
+        const employees = await this.employeeService.getAllEmployeeByCompanyId(companyId);
+        let employeeSchedules = await this.processWorkSchedules(employees, workSchedules, companyId);
+        if (employeeIds && employeeIds.length) {
+            employeeSchedules = Object.fromEntries(Object.entries(employeeSchedules).filter(([key]) => employeeIds.map(Number).includes(Number(key))));
+        }
+        if (workScheduleIds && workScheduleIds.length) {
+            employeeSchedules = this.filterByWorkScheduleIds(employeeSchedules, workScheduleIds);
+        }
+        if (orgPaths && orgPaths.length) {
+            employeeSchedules = this.filterByOrgPaths(employeeSchedules, orgPaths);
+        }
+        if (q) {
+            employeeSchedules = this.handleSearchAssignment(q, employeeSchedules);
+        }
+        return this.paginateResults(this.formatEmployeeSchedules(employeeSchedules, workSchedules, new Date(startDate), new Date(endDate)), page, take);
+    }
+    filterByWorkScheduleIds(employeeSchedules, workScheduleIds) {
+        return Object.fromEntries(Object.entries(employeeSchedules)
+            .map(([employeeId, employee]) => {
+            const filteredSchedules = employee.schedules.filter((schedule) => workScheduleIds.map(Number).includes(schedule.workSchedule.id));
+            if (filteredSchedules.length > 0) {
+                return [employeeId, { ...employee, schedules: filteredSchedules }];
+            }
+            return undefined;
+        })
+            .filter((entry) => entry !== undefined));
+    }
+    filterByOrgPaths(employeeSchedules, orgPaths) {
+        return Object.fromEntries(Object.entries(employeeSchedules)
+            .map(([employeeId, employee]) => {
+            const filteredSchedules = employee.schedules.filter((schedule) => schedule.workSchedule.listOrganizationPaths.some((path) => orgPaths.includes(path)));
+            if (filteredSchedules.length > 0) {
+                return [employeeId, { ...employee, schedules: filteredSchedules }];
+            }
+            return undefined;
+        })
+            .filter((entry) => entry !== undefined));
+    }
+    async processWorkSchedules(employees, workSchedules, companyId) {
+        const employeeSchedules = {};
+        const employeeGroupList = await this.getEmployeeGroupList(workSchedules, companyId);
+        const workScheduleDefault = workSchedules.find(ws => ws.default === true) || null;
+        employees.forEach(employee => {
+            employeeSchedules[employee.id] = {
+                id: employee.id,
+                email: employee.email,
+                fullName: employee.fullNameEn || employee.fullNameLocal,
+                employeeRef: employee.employeeRef,
+                isExistedInWorkScheduleDefault: this.checkIsInWorkScheduleDefault({
+                    employeeId: Number(employee.id),
+                    companyId,
+                    workScheduleDefault,
+                    employeeInGroupList: employeeGroupList[employee.id] || [],
+                }),
+                schedules: [],
+            };
+        });
+        await Promise.all(workSchedules.map(async (workSchedule) => {
+            const assignees = workSchedule.assignees;
+            const groupEmployees = employeeGroupList[workSchedule.id] || [];
+            const allEmployees = new Set([
+                ...Object.keys(assignees),
+                ...groupEmployees.map(emp => emp.employeeId),
+            ]);
+            await Promise.all(Array.from(allEmployees).map(async (employeeId) => {
+                if (employeeSchedules[employeeId] &&
+                    employeeSchedules[employeeId].isExistedInWorkScheduleDefault ===
+                        false) {
+                    const existingSchedule = employeeSchedules[employeeId].schedules.find((schedule) => schedule.workSchedule.id === workSchedule.id);
+                    if (!existingSchedule) {
+                        employeeSchedules[employeeId].schedules.push({
+                            workSchedule: {
+                                id: workSchedule.id,
+                                name: workSchedule.name,
+                                color: workSchedule.color,
+                                startDate: workSchedule.startDate,
+                                endDate: workSchedule.endDate,
+                                utcOffset: workSchedule.utcOffset,
+                                publishType: workSchedule.publishType,
+                                publishHistories: workSchedule.publishHistories,
+                                listOrganizationPaths: workSchedule.listOrganizationPaths,
+                            },
+                            daySchedules: workSchedule.daySchedules,
+                        });
+                    }
+                    else {
+                        existingSchedule.workSchedule = {
+                            id: workSchedule.id,
+                            name: workSchedule.name,
+                            color: workSchedule.color,
+                            startDate: workSchedule.startDate,
+                            endDate: workSchedule.endDate,
+                            utcOffset: workSchedule.utcOffset,
+                            publishType: workSchedule.publishType,
+                            publishHistories: workSchedule.publishHistories,
+                            listOrganizationPaths: workSchedule.listOrganizationPaths,
+                        };
+                        existingSchedule.daySchedules = workSchedule.daySchedules;
+                    }
+                }
+            }));
+        }));
+        return employeeSchedules;
+    }
+    async getEmployeeGroupList(workSchedules, companyId) {
+        const employeeGroupList = {};
+        await Promise.all(workSchedules.map(async (workSchedule) => {
+            const groupEmployees = await this.workScheduleService.getAllEmployeesInGroupAndSubGroups(companyId, Object.keys(workSchedule.groupAssignees));
+            employeeGroupList[workSchedule.id] = groupEmployees;
+        }));
+        return employeeGroupList;
+    }
+    formatEmployeeSchedules(employeeSchedules, workSchedules, startDate, endDate) {
+        return Object.values(employeeSchedules).map(employee => ({
+            id: employee.id,
+            fullName: employee.fullName,
+            employeeRef: employee.employeeRef,
+            isExistedInWorkScheduleDefault: employee.isExistedInWorkScheduleDefault,
+            days: employee.schedules.length === 0
+                ? []
+                : this.generateDaySchedules(employee.schedules, startDate, endDate, workSchedules),
+        }));
+    }
+    generateDaySchedules(schedules, startDate, endDate, workSchedules) {
+        const days = [];
+        const currentDate = moment(startDate);
+        const end = moment(endDate);
+        while (currentDate.isSameOrBefore(end)) {
+            const applicableSchedule = this.findApplicableSchedule(schedules, currentDate.toDate(), workSchedules);
+            if (applicableSchedule) {
+                const dayOfWeek = currentDate.day();
+                const daySchedule = applicableSchedule?.daySchedules?.find((ds) => ds.day === this.mapDayOfWeek(dayOfWeek));
+                days.push({
+                    date: currentDate.format('YYYY-MM-DD'),
+                    workSchedule: {
+                        id: applicableSchedule.id,
+                        name: applicableSchedule.name,
+                        color: applicableSchedule.color,
+                        startDate: applicableSchedule.startDate,
+                        endDate: applicableSchedule.endDate,
+                        utcOffset: applicableSchedule.utcOffset,
+                        publishType: applicableSchedule.publishType,
+                        listOrganizationPaths: applicableSchedule.listOrganizationPaths,
+                    },
+                    dayScheduleState: daySchedule ? 'Work day' : 'Rest day',
+                    startTime: this.formatTime(daySchedule?.from, applicableSchedule.utcOffset) ||
+                        null,
+                    endTime: this.formatTime(daySchedule?.to, applicableSchedule.utcOffset) ||
+                        null,
+                });
+            }
+            currentDate.add(1, 'day');
+        }
+        return days;
+    }
+    findApplicableSchedule(schedules, date, workSchedules) {
+        if (!schedules.length)
+            return [];
+        const targetDate = moment(date).startOf('day');
+        const listWorkScheduleMatchTargetDate = workSchedules.filter(ws => {
+            return targetDate.isBetween(moment(ws.startDate).startOf('day'), moment(ws.endDate).endOf('day'), null, '[]');
+        });
+        const applicableSchedule = listWorkScheduleMatchTargetDate.reduce((latest, schedule) => {
+            if (schedule.publishType ===
+                work_schedule_publish_type_enum_1.EWorkSchedulePublishType.PUBLISH_NEW_AND_OVERRIDE) {
+                const publishHistory = schedule.publishHistories;
+                if (!latest ||
+                    moment(publishHistory[publishHistory.length - 1].updatedOn).isAfter(moment(latest.publishHistories[latest.publishHistories.length - 1]
+                        .updatedOn))) {
+                    return schedule;
+                }
+            }
+            else if (schedule.publishType === work_schedule_publish_type_enum_1.EWorkSchedulePublishType.JUST_PUBLISH_NEW &&
+                !latest) {
+                return schedule;
+            }
+            return latest;
+        }, null);
+        return applicableSchedule;
+    }
+    handleSearchAssignment(searchString, employeeSchedules) {
+        const lowercaseQuery = searchString.toLowerCase();
+        return Object.values(employeeSchedules).filter(employee => {
+            if (employee.employeeRef.toLowerCase().includes(lowercaseQuery) ||
+                employee.fullName.toLowerCase().includes(lowercaseQuery)) {
+                return true;
+            }
+            return false;
+        });
+    }
+    checkIsInWorkScheduleDefault(args) {
+        const { employeeId, workScheduleDefault, employeeInGroupList } = args;
+        if (!workScheduleDefault) {
+            return false;
+        }
+        const isAssigneeInWorkScheduleDefault = workScheduleDefault.assignees &&
+            Object.keys(workScheduleDefault.assignees).includes(String(employeeId));
+        const isAssigneeGroupInWorkScheduleDefault = employeeInGroupList.some(emp => emp.employeeId === employeeId);
+        return (isAssigneeInWorkScheduleDefault || isAssigneeGroupInWorkScheduleDefault);
+    }
     formatTime(time, utcOffset) {
         if (!time) {
             return null;
@@ -202,186 +406,9 @@ let WorkScheduleAssignmentService = class WorkScheduleAssignmentService extends 
             data: paginatedData,
         };
     }
-    async getWorkScheduleAssignmentByCompanyId(args) {
-        const { query, companyId } = args;
-        const { startDate, endDate, employeeIds, orgPaths, page = 1, q, take = 20, workScheduleIds, } = query;
-        const workSchedules = await this.workScheduleService.getAllWorkSchedulePublishedForWsAssignment(companyId);
-        const employees = await this.employeeService.getAllEmployeeByCompanyId(companyId);
-        let employeeSchedules = await this.processWorkSchedules(employees, workSchedules, companyId);
-        if (employeeIds && employeeIds.length) {
-            employeeSchedules = Object.fromEntries(Object.entries(employeeSchedules).filter(([key]) => employeeIds.includes(Number(key))));
-        }
-        if (workScheduleIds && workScheduleIds.length) {
-            employeeSchedules = Object.fromEntries(Object.entries(employeeSchedules)
-                .map(([employeeId, employee]) => {
-                const filteredSchedules = employee.schedules.filter((schedule) => {
-                    return workScheduleIds
-                        .map(Number)
-                        .includes(schedule?.workSchedule.id);
-                });
-                if (filteredSchedules.length > 0) {
-                    return [
-                        employeeId,
-                        {
-                            ...employee,
-                            schedules: filteredSchedules,
-                        },
-                    ];
-                }
-                return undefined;
-            })
-                .filter((entry) => entry !== undefined));
-        }
-        if (orgPaths && orgPaths.length) {
-            employeeSchedules = Object.fromEntries(Object.entries(employeeSchedules)
-                .map(([employeeId, employee]) => {
-                const filteredSchedules = employee.schedules.filter((schedule) => {
-                    return schedule?.workSchedule?.listOrganizationPaths?.some((path) => orgPaths.includes(path));
-                });
-                if (filteredSchedules.length > 0) {
-                    return [
-                        employeeId,
-                        {
-                            ...employee,
-                            schedules: filteredSchedules,
-                        },
-                    ];
-                }
-                return undefined;
-            })
-                .filter((entry) => entry !== undefined));
-        }
-        if (q) {
-            employeeSchedules = this.handleSearchAssignment(q, employeeSchedules);
-        }
-        return this.paginateResults(this.formatEmployeeSchedules(employeeSchedules, new Date(startDate), new Date(endDate)), page, take);
-    }
-    async processWorkSchedules(employees, workSchedules, companyId) {
-        const employeeSchedules = {};
-        const employeeGroupList = await Promise.all(workSchedules.map(async (workSchedule) => {
-            return this.workScheduleService.getAllEmployeesInGroupAndSubGroups(companyId, Object.keys(workSchedule.groupAssignees));
-        }));
-        const workScheduleDefault = workSchedules.find(ws => ws.default === true) || null;
-        employees.forEach((employee, index) => {
-            employeeSchedules[employee.id] = {
-                id: employee.id,
-                email: employee.email,
-                employeeRef: employee.employeeRef,
-                employeeNo: employee.employeeNo,
-                fullNameLocal: employee.fullNameLocal,
-                fullNameEn: employee.fullNameEn,
-                isExistedInWorkScheduleDefault: this.checkIsInWorkScheduleDefault({
-                    employeeId: Number(employee.id),
-                    companyId,
-                    workScheduleDefault,
-                    employeeInGroupList: employeeGroupList[index]?.map(emp => emp.employeeId) || [],
-                }),
-                schedules: [],
-            };
-        });
-        await Promise.all(workSchedules.map(async (workSchedule, index) => {
-            const assignees = workSchedule.assignees;
-            const groupEmployees = employeeGroupList[index] || [];
-            const allEmployees = new Set([
-                ...Object.keys(assignees),
-                ...groupEmployees.map(emp => emp.employeeId),
-            ]);
-            await Promise.all(Array.from(allEmployees).map(async (employeeId) => {
-                if (employeeSchedules[employeeId]) {
-                    const alreadyAssigned = employeeSchedules[employeeId].schedules.some((schedule) => schedule.workSchedule.id === workSchedule.id);
-                    if (!alreadyAssigned) {
-                        employeeSchedules[employeeId].schedules.push({
-                            workSchedule: {
-                                id: workSchedule.id,
-                                name: workSchedule.name,
-                                color: workSchedule.color,
-                                startDate: workSchedule.startDate,
-                                endDate: workSchedule.endDate,
-                                utcOffset: workSchedule.utcOffset,
-                                listOrganizationPaths: workSchedule.listOrganizationPaths,
-                            },
-                            daySchedules: workSchedule.daySchedules,
-                        });
-                    }
-                }
-            }));
-        }));
-        return employeeSchedules;
-    }
-    formatEmployeeSchedules(employeeSchedules, startDate, endDate) {
-        return Object.values(employeeSchedules).map(employee => ({
-            id: employee.id,
-            fullName: employee.fullNameEn || employee.fullNameLocal,
-            employeeRef: employee.employeeRef,
-            isExistedInWorkScheduleDefault: employee.isExistedInWorkScheduleDefault,
-            days: this.generateDaySchedules(employee.schedules, startDate, endDate),
-        }));
-    }
-    generateDaySchedules(schedules, startDate, endDate) {
-        const days = [];
-        const currentDate = moment(startDate);
-        const end = moment(endDate);
-        while (currentDate.isBefore(end)) {
-            const applicableSchedule = this.findApplicableSchedule(schedules, currentDate.toDate());
-            if (applicableSchedule) {
-                const dayOfWeek = currentDate.day();
-                const daySchedule = applicableSchedule.daySchedules.find((ds) => ds.day === this.mapDayOfWeek(dayOfWeek));
-                days.push({
-                    date: currentDate.format('YYYY-MM-DD'),
-                    workSchedule: applicableSchedule.workSchedule,
-                    dayScheduleState: daySchedule ? 'Work day' : 'Rest day',
-                    startTime: this.formatTime(daySchedule?.from, applicableSchedule.workSchedule.utcOffset) || null,
-                    endTime: this.formatTime(daySchedule?.to, applicableSchedule.workSchedule.utcOffset) || null,
-                });
-            }
-            currentDate.add(1, 'day');
-        }
-        return days;
-    }
-    findApplicableSchedule(schedules, date) {
-        const targetDate = moment(date).startOf('day');
-        return schedules.find(schedule => {
-            const scheduleStart = moment(schedule.workSchedule.startDate).startOf('day');
-            const scheduleEnd = moment(schedule.workSchedule.endDate).endOf('day');
-            return targetDate.isBetween(scheduleStart, scheduleEnd, null, '[]');
-        });
-    }
     mapDayOfWeek(day) {
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         return days[day];
-    }
-    handleSearchAssignment(searchString, arr) {
-        const lowercaseQuery = searchString.toLowerCase();
-        return Object.values(arr).filter(employee => {
-            if (employee.employeeRef.toLowerCase().includes(lowercaseQuery) ||
-                employee.fullNameLocal.toLowerCase().includes(lowercaseQuery)) {
-                return true;
-            }
-            for (const schedule of employee.schedules) {
-                if (schedule.workSchedule.name.toLowerCase().includes(lowercaseQuery)) {
-                    return true;
-                }
-            }
-            return false;
-        });
-    }
-    checkIsInWorkScheduleDefault(args) {
-        const { employeeId, workScheduleDefault, employeeInGroupList } = args;
-        let isAssigneeInWorkScheduleDefault = false;
-        let isAssigneeGroupInWorkScheduleDefault = false;
-        if (!workScheduleDefault) {
-            return false;
-        }
-        if (workScheduleDefault.assignees) {
-            const assignee = workScheduleDefault.assignees;
-            const employeeIds = Object.keys(assignee);
-            isAssigneeInWorkScheduleDefault = employeeIds.includes(String(employeeId));
-        }
-        if (workScheduleDefault.groupAssignees) {
-            isAssigneeGroupInWorkScheduleDefault =
-                employeeInGroupList.includes(employeeId);
-        }
-        return (isAssigneeInWorkScheduleDefault || isAssigneeGroupInWorkScheduleDefault);
     }
     async publishWorkScheduleAssignment(params) {
         const { companyId, userEmail, workScheduleId, assigneeIds, startDate, endDate, } = params;
@@ -465,10 +492,11 @@ let WorkScheduleAssignmentService = class WorkScheduleAssignmentService extends 
             dateTo: endDate,
             workScheduleId,
             verb: `has just published a work schedule. Check it out now`,
+            workScheduleName: '',
         });
     }
     async sendWorkScheduleNotification(params) {
-        const { employeeIds, companyId, userEmail, dateFrom, dateTo, workScheduleId, verb, } = params;
+        const { employeeIds, companyId, userEmail, dateFrom, dateTo, workScheduleId, verb, workScheduleName, } = params;
         const chunkSize = 50;
         const chunks = (0, chunk_array_util_1.chunkArray)(employeeIds, chunkSize);
         for (const chunk of chunks) {
@@ -484,6 +512,7 @@ let WorkScheduleAssignmentService = class WorkScheduleAssignmentService extends 
                 employees,
                 workScheduleId,
                 verb,
+                workScheduleName,
             });
             await this.hrforteNotificationProducer.addSendBulkJob({
                 companyId,

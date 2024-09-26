@@ -54,13 +54,25 @@ let OrganizationStructureService = class OrganizationStructureService extends se
             .leftJoinAndSelect(`${orgAlias}.workSchedule`, workScheduleAlias, `${workScheduleAlias}.isDeleted = :isDeleted AND ${workScheduleAlias}.companyId = :companyId`, { isDeleted: false, companyId });
         if (moduleType === employee_module_type_enum_1.EEmployeeModuleType.WORK_SCHEDULE &&
             workScheduleIds?.length) {
-            queryBuilder.andWhere(`(NOT EXISTS (
-            SELECT 1
-            FROM ${workScheduleAlias},
-            jsonb_each(${workScheduleAlias}.groupAssignees) AS groupAssignee
-            WHERE ${workScheduleAlias}.id IN (:...workScheduleIds)
-            AND (groupAssignee.value->>'id')::int = ${orgAlias}.id
-          ))`, { workScheduleIds });
+            const dbType = (0, database_1.databaseType)();
+            if (dbType === 'mssql') {
+                queryBuilder.andWhere(`(NOT EXISTS (
+              SELECT 1
+              FROM ${workScheduleAlias}
+              CROSS APPLY OPENJSON(${workScheduleAlias}.groupAssignees) WITH ([id] int)
+              WHERE ${workScheduleAlias}.id IN (:...workScheduleIds)
+              AND [id] = ${orgAlias}.id
+            ))`, { workScheduleIds });
+            }
+            else {
+                queryBuilder.andWhere(`(NOT EXISTS (
+              SELECT 1
+              FROM ${workScheduleAlias},
+              jsonb_each(${workScheduleAlias}.groupAssignees) AS groupAssignee
+              WHERE ${workScheduleAlias}.id IN (:...workScheduleIds)
+              AND (groupAssignee.value->>'id')::int = ${orgAlias}.id
+            ))`, { workScheduleIds });
+            }
         }
         const querySearchFields = ['name'];
         const { page, take, q: querySearchString, isDeleted = false, ids, createdFrom, isSelectAll, } = paginationQueryDto;

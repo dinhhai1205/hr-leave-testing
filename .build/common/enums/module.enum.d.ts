@@ -9,5 +9,5 @@ export declare enum EMainModuleNumber {
     EMPLOYEE = 1,
     LEAVE = 2,
     PAYROLL = 5,
-    WORK_SCHEDULE = 20
+    WORK_SCHEDULE = 12
 }

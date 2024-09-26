@@ -1,5 +1,5 @@
 import * as moment from 'moment';
-import { FindOneOptions, FindOptionsSelect, FindOptionsWhere, Repository, SelectQueryBuilder } from 'typeorm';
+import { FindManyOptions, FindOneOptions, FindOptionsSelect, FindOptionsWhere, Repository, SelectQueryBuilder } from 'typeorm';
 import { PaginationResponseDto } from '../../../../common/dto';
 import { EEmployeeContractType } from '../../../../common/enums';
 import { IAuthInfo } from '../../../../common/interfaces';
@@ -14,7 +14,8 @@ export declare class EmployeeService extends LegacyBaseService<EmployeeEntity> {
     readonly employeeRepository: Repository<EmployeeEntity>;
     private availableEmployeeCondition;
     constructor(employeeRepository: Repository<EmployeeEntity>);
-    getEmployeeByIds: (employeeIds: number[]) => Promise<EmployeeEntity[]>;
+    getEmployeeByIds: (employeeIds: number[], options?: FindManyOptions<EmployeeEntity>) => Promise<EmployeeEntity[]>;
+    getAllEmployee(companyId: number, options?: FindManyOptions<EmployeeEntity>): Promise<EmployeeEntity[]>;
     getEmployeeByIdsWithoutRelations: (employeeIds: number[]) => Promise<EmployeeEntity[]>;
     getAllEmployeeForPolicyCredit(filterEmployee?: IFilterEmployee, { batchSize, skip }?: {
         batchSize?: number;

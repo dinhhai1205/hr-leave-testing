@@ -44,6 +44,8 @@ const work_schedule_state_enum_1 = require("./enums/work-schedule-state.enum");
 const chunk_array_util_1 = require("../../../../common/utils/chunk-array.util");
 const config_1 = require("../../../../config");
 const work_schedule_assignment_hrforte_notification_mapper_1 = require("../work-schedule-assignment/mappers/work-schedule-assignment-hrforte-notification.mapper");
+const set_util_1 = require("../../../../common/utils/set.util");
+const remove_null_or_undefined_util_1 = require("./utils/remove-null-or-undefined.util");
 let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBaseService {
     constructor(apiService, workScheduleRepository, autoDeductionService, breakRuleService, dayScheduleService, locationWorkScheduleService, companyMappingService, employeeService, organizationStructureService, workScheduleAssignmentService, schedulerRegistry, workScheduleProducer, employeeMappingService, groupMappingService, hrforteNotificationProducer, appConfig) {
         super(workScheduleRepository);
@@ -177,7 +179,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         return data;
     }
     async handleCreateWorkSchedule(createWorkScheduleBodyDTO, companyId, userEmail, timeTrackerCompanyId) {
-        const workSchedule = await this.getWorkScheduleByName(createWorkScheduleBodyDTO.name);
+        const workSchedule = await this.getWorkScheduleByName(createWorkScheduleBodyDTO.name, companyId);
         if (workSchedule.length !== 0)
             throw new common_1.BadRequestException(`Work schedule ${createWorkScheduleBodyDTO.name} has been created`);
         const { data } = await this.apiService.request({
@@ -620,6 +622,9 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             `${workScheduleAlias}.threshold`,
             `${workScheduleAlias}.ttWorkScheduleId`,
             `${workScheduleAlias}.publishType`,
+            `${workScheduleAlias}.assignees`,
+            `${workScheduleAlias}.groupAssignees`,
+            `${workScheduleAlias}.publishHistories`,
             `${breakAlias}.id`,
             `${breakAlias}.name`,
             `${breakAlias}.allowToBeTakenFromTo`,
@@ -790,6 +795,9 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 id: true,
                 name: true,
                 state: true,
+                startDate: true,
+                endDate: true,
+                default: true,
             },
             where: {
                 companyId: companyId,
@@ -826,8 +834,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             });
         }
         queryBuilder.orderBy(`${workScheduleAlias}.created_on`, sort);
-        queryBuilder
-            .select([
+        queryBuilder.select([
             `${workScheduleAlias}.id`,
             `${workScheduleAlias}.name`,
             `${workScheduleAlias}.default`,
@@ -836,9 +843,9 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             `${workScheduleAlias}.endDate`,
             `${workScheduleAlias}.state`,
             `${workScheduleAlias}.created_on`,
-        ])
-            .addSelect(`(SELECT COUNT(*) FROM jsonb_object_keys(${workScheduleAlias}.assignees))`, 'assigneeCount')
-            .addSelect(`(SELECT COUNT(*) FROM jsonb_object_keys(${workScheduleAlias}.group_assignees))`, 'groupAssigneeCount');
+            `${workScheduleAlias}.assignees`,
+            `${workScheduleAlias}.group_assignees`,
+        ]);
         const worSchedules = await queryBuilder.getRawMany();
         const totalCount = await queryBuilder.getCount();
         const { default: defaultSchedules, notDefault: nonDefaultSchedules } = worSchedules.reduce((acc, worSchedule) => {
@@ -851,8 +858,8 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 endDate: worSchedule.work_schedule_end_date,
                 state: worSchedule.work_schedule_state,
                 createdOn: worSchedule.created_on,
-                assigneeCount: parseInt(worSchedule.assigneeCount, 10),
-                groupAssigneeCount: parseInt(worSchedule.groupAssigneeCount, 10),
+                assigneeCount: Object.keys(worSchedule?.work_schedule_assignees).length || 0,
+                groupAssigneeCount: Object.keys(worSchedule?.group_assignees).length || 0,
             };
             if (schedule.default) {
                 acc.default.push(schedule);
@@ -992,7 +999,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         }
         return result;
     }
-    async getWorkScheduleByName(name) {
+    async getWorkScheduleByName(name, companyId) {
         const listWorkScheduleIds = this.workScheduleRepository.find({
             select: {
                 id: true,
@@ -1001,6 +1008,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             where: {
                 name,
                 isDeleted: false,
+                companyId,
             },
         });
         return listWorkScheduleIds;
@@ -1085,7 +1093,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         return result;
     }
     async handleCreateWorkScheduleLeave(createWorkScheduleBodyDTO, companyId, userEmail) {
-        const workSchedule = await this.getWorkScheduleByName(createWorkScheduleBodyDTO.name);
+        const workSchedule = await this.getWorkScheduleByName(createWorkScheduleBodyDTO.name, companyId);
         if (workSchedule.length !== 0)
             throw new common_1.BadRequestException(`Work schedule ${createWorkScheduleBodyDTO.name} has been created`);
         const workScheduleDTO = {
@@ -1098,6 +1106,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             userEmail: userEmail,
             weeklyHours: createWorkScheduleBodyDTO?.weeklyHours,
             utcOffset: createWorkScheduleBodyDTO?.utcOffset,
+            state: createWorkScheduleBodyDTO.state,
             overtime: createWorkScheduleBodyDTO.overtime,
         };
         const workScheduleEntity = await this.createWorkSchedule(companyId, userEmail, workScheduleDTO);
@@ -1369,11 +1378,12 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             const employeeMappingMap = new Map(employeeMappings.map(e => [e.employeeId, e.timeTrackerEmployeeId]));
             const workSchedules = await this.getTTWorkSchedulesByWorkScheduleIds(workScheduleIds, companyId);
             const workScheduleMap = new Map(workSchedules.map(ws => [ws.id, ws.ttWorkScheduleId]));
-            let mappedAssignments = assignments.map(assignment => {
+            let mappedAssignments = assignments
+                .map(assignment => {
                 const timeTrackerEmployeeId = employeeMappingMap.get(assignment.employeeId);
                 const ttWorkScheduleId = workScheduleMap.get(assignment.workScheduleId);
                 if (!timeTrackerEmployeeId || !ttWorkScheduleId) {
-                    throw new Error(`Mapping not found for employeeId ${assignment.employeeId} or workScheduleId ${assignment.workScheduleId}`);
+                    return null;
                 }
                 return {
                     ...assignment,
@@ -1384,7 +1394,8 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                         ? assignment?.date.toISOString()
                         : assignment?.date,
                 };
-            });
+            })
+                .filter(assignment => assignment !== null);
             while (mappedAssignments.length > 0) {
                 const batch = mappedAssignments.slice(0, 100);
                 const { data } = await this.apiService.request({
@@ -1456,25 +1467,26 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                                     ?.ttId,
                             };
                         }),
-                        breaks: item.breaks.map(item => {
+                        breaks: item.breaks.map(subItem => {
                             return {
-                                name: item.name,
-                                allowToBeTakenFromTo: item.allowToBeTakenFromTo,
-                                duration: item.duration,
-                                from: moment(item.from, 'HH:mm:ss').format('HH:mm:ss Z'),
-                                to: moment(item.to, 'HH:mm:ss').format('HH:mm:ss Z'),
-                                unitTime: item.unitTime,
-                                id: listTtBreakId.find(ttItem => ttItem.id === item.id)?.ttId,
+                                name: subItem.name,
+                                allowToBeTakenFromTo: subItem.allowToBeTakenFromTo,
+                                duration: subItem.duration,
+                                from: moment(subItem.from, 'HH:mm:ssZ').format('HH:mm:ss Z'),
+                                to: moment(subItem.to, 'HH:mm:ssZ').format('HH:mm:ss Z'),
+                                unitTime: subItem.unitTime,
+                                id: listTtBreakId.find(ttItem => ttItem.id === subItem.id)
+                                    ?.ttId,
                             };
                         }),
-                        daySchedules: item.daySchedules.map(item => {
+                        daySchedules: item.daySchedules.map(subItem => {
                             return {
-                                day: item.day,
-                                from: moment(item.from, 'HH:mm:ss').format('HH:mm:ss Z'),
-                                to: moment(item.to, 'HH:mm:ss').format('HH:mm:ss Z'),
-                                duration: item.duration,
-                                unitTime: item.unitTime,
-                                id: listTtDayScheduleId.find(ttItem => ttItem.id === item.id)
+                                day: subItem.day,
+                                from: moment(subItem.from, 'HH:mm:ssZ').format('HH:mm:ss Z'),
+                                to: moment(subItem.to, 'HH:mm:ssZ').format('HH:mm:ss Z'),
+                                duration: subItem.duration,
+                                unitTime: subItem.unitTime,
+                                id: listTtDayScheduleId.find(ttItem => ttItem.id === subItem.id)
                                     ?.ttId,
                             };
                         }),
@@ -1484,7 +1496,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                         excludeEarlyClockIn: item.excludeEarlyClockIn || false,
                         overtime: {
                             timeRangeStyle: common_2.TimeRangeStyle.Hour,
-                            endWorkDayAt: moment(item.endWorkDayAt, 'HH:mm:ss').format('HH:mm:ss Z'),
+                            endWorkDayAt: moment(item.endWorkDayAt, 'HH:mm:ssZ').format('HH:mm:ss Z'),
                             unitTime: common_2.UnitTime.MINUTE,
                         },
                         utcOffset: item.utcOffset,
@@ -1493,16 +1505,30 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                         workArrangement: item?.workArrangement,
                         locations: [],
                         color: item?.color,
-                        startDate: item?.startDate?.toISOString(),
-                        endDate: item?.endDate?.toISOString(),
                         state: item?.state,
                         threshold: item?.threshold,
                         publishType: item?.publishType,
+                        publishHistories: item?.publishHistories
+                            ? item?.publishHistories
+                            : undefined,
                     };
+                    if (!item.startDate) {
+                        delete createDto.startDate;
+                    }
+                    else {
+                        createDto.startDate = item.startDate.toISOString();
+                    }
+                    if (!item.endDate) {
+                        delete createDto.endDate;
+                    }
+                    else {
+                        createDto.endDate = item.endDate.toISOString();
+                    }
+                    const sanitizedDto = (0, remove_null_or_undefined_util_1.removeNullOrUndefined)(createDto);
                     const { data } = await this.apiService.request({
                         type: 'CREATE_WORK_SCHEDULE',
                         data: {
-                            ...createDto,
+                            ...sanitizedDto,
                             locations: locations || [],
                             id: item.ttWorkScheduleId && item.ttWorkScheduleId,
                             newId: newTtWorkScheduleId && newTtWorkScheduleId,
@@ -1655,11 +1681,12 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             dateTo: endDate,
             userEmail,
             verb: `has just published a work schedule. Check it out now`,
+            workScheduleName: workSchedule.name,
         });
         return updatedWorkSchedule;
     }
     async sendWorkScheduleNotification(params) {
-        const { employeeIds, companyId, userEmail, dateFrom, dateTo, workScheduleId, verb, } = params;
+        const { employeeIds, companyId, userEmail, dateFrom, dateTo, workScheduleId, verb, workScheduleName, } = params;
         const chunkSize = 50;
         const chunks = (0, chunk_array_util_1.chunkArray)(employeeIds, chunkSize);
         for (const chunk of chunks) {
@@ -1674,6 +1701,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 dateTo,
                 employees,
                 workScheduleId,
+                workScheduleName,
                 verb,
             });
             await this.hrforteNotificationProducer.addSendBulkJob({
@@ -1772,14 +1800,25 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         if (workScheduleEndDate && isInThePast) {
             this.cancelScheduleExpiredJob(workSchedule.id);
         }
-        await this.update(workScheduleId, {
+        await this.workScheduleRepository
+            .createQueryBuilder()
+            .update(database_1.WorkScheduleEntity)
+            .set({
             state: work_schedule_state_enum_1.EWorkScheduleState.UNPUBLISHED,
             publishHistories: workSchedule.publishHistories,
+            startDate: () => 'NULL',
+            endDate: () => 'NULL',
             assignees: workSchedule.assignees,
             groupAssignees: workSchedule.groupAssignees,
-        }, {
-            userEmail: userEmail,
-        });
+            updatedBy: userEmail,
+            updatedOn: moment.utc().toDate(),
+        })
+            .where('id = :id', { id: workScheduleId })
+            .andWhere('companyId = :companyId AND isDeleted = :isDeleted', {
+            companyId,
+            isDeleted: false,
+        })
+            .execute();
         await this.workScheduleAssignmentService.removeWorkScheduleAssignmentQueue({
             workScheduleId,
             companyId,
@@ -1795,6 +1834,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             dateTo: moment(workSchedule.endDate).format('YYYY-MM-DD'),
             userEmail,
             verb: `has just unpublished a work schedule.`,
+            workScheduleName: workSchedule.name,
         });
         if (timeTrackerCompanyId) {
             const workScheduleTTMappingId = workSchedule.ttWorkScheduleId;
@@ -1930,8 +1970,6 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 }),
                 this.update(workScheduleId, {
                     default: true,
-                    startDate: undefined,
-                    endDate: undefined,
                     assignees: workSchedule.assignees,
                     groupAssignees: workSchedule.groupAssignees,
                 }, {
@@ -1940,6 +1978,23 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 }),
             ];
             await Promise.all(promises);
+            await this.workScheduleRepository
+                .createQueryBuilder()
+                .update(database_1.WorkScheduleEntity)
+                .set({
+                startDate: () => 'NULL',
+                endDate: () => 'NULL',
+                assignees: workSchedule.assignees,
+                groupAssignees: workSchedule.groupAssignees,
+                updatedBy: userEmail,
+                updatedOn: moment.utc().toDate(),
+            })
+                .where('id = :id', { id: workScheduleId })
+                .andWhere('companyId = :companyId AND isDeleted = :isDeleted', {
+                companyId,
+                isDeleted: false,
+            })
+                .execute();
             try {
                 this.cancelScheduleExpiredJob(workSchedule.id);
             }
@@ -1957,6 +2012,23 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 userEmail,
                 companyId,
             });
+            await this.workScheduleRepository
+                .createQueryBuilder()
+                .update(database_1.WorkScheduleEntity)
+                .set({
+                startDate: () => 'NULL',
+                endDate: () => 'NULL',
+                assignees: workSchedule.assignees,
+                groupAssignees: workSchedule.groupAssignees,
+                updatedBy: userEmail,
+                updatedOn: moment.utc().toDate(),
+            })
+                .where('id = :id', { id: workScheduleId })
+                .andWhere('companyId = :companyId AND isDeleted = :isDeleted', {
+                companyId,
+                isDeleted: false,
+            })
+                .execute();
         }
         await this.update(workScheduleDefault.id, {
             default: false,
@@ -1965,6 +2037,21 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             userEmail,
             companyId,
         });
+        await this.workScheduleRepository
+            .createQueryBuilder()
+            .update(database_1.WorkScheduleEntity)
+            .set({
+            startDate: () => 'NULL',
+            endDate: () => 'NULL',
+            updatedBy: userEmail,
+            updatedOn: moment.utc().toDate(),
+        })
+            .where('id = :id', { id: workScheduleId })
+            .andWhere('companyId = :companyId AND isDeleted = :isDeleted', {
+            companyId,
+            isDeleted: false,
+        })
+            .execute();
         if (ttCompanyId) {
             await this.apiService.request({
                 type: 'UPDATE_WORK_SCHEDULE_DEFAULT',
@@ -2298,20 +2385,25 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
     }
     async getAllWorkSchedulesIsOverlap(params) {
         const { companyId, endDate, startDate } = params;
+        const targetStartDate = moment(startDate).startOf('day');
+        const targetEndDate = moment(endDate).endOf('day');
         const wsAlias = database_1.ETableName.WORK_SCHEDULE;
-        const workSchedule = this.workScheduleRepository
+        const workSchedules = await this.workScheduleRepository
             .createQueryBuilder(wsAlias)
             .andWhere(`${wsAlias}.isDeleted = :isDeleted
-          AND ${wsAlias}.companyId = :companyId
-          AND (
-            (${wsAlias}.endDate <= :endDate AND ${wsAlias}.startDate >= :startDate)
-          )
-          AND ${wsAlias}.state = :state
-          `, {
+         AND ${wsAlias}.companyId = :companyId
+         AND ${wsAlias}.id != :workScheduleId
+         AND (
+           (${wsAlias}.startDate <= :targetEndDate AND ${wsAlias}.endDate >= :targetStartDate)
+           OR (${wsAlias}.startDate >= :targetStartDate AND ${wsAlias}.endDate <= :targetEndDate)
+           OR (${wsAlias}.startDate <= :targetStartDate AND ${wsAlias}.endDate >= :targetEndDate)
+         )
+         AND ${wsAlias}.state = :state`, {
             isDeleted: false,
             companyId,
-            startDate,
-            endDate,
+            workScheduleId: params.workScheduleId,
+            targetStartDate: targetStartDate.toDate(),
+            targetEndDate: targetEndDate.toDate(),
             state: work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED,
         })
             .select([
@@ -2323,7 +2415,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             `${wsAlias}.default`,
         ])
             .getMany();
-        return workSchedule;
+        return workSchedules;
     }
     async getWorkScheduleDefaultByCompanyId(companyId) {
         const workSchedule = await this.workScheduleRepository.findOne({
@@ -2493,60 +2585,53 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             ? (0, common_2.getDaysBetweenDates)(startDate, endDate)
             : (0, common_2.getCurrentWeek)();
         const { take, page, isSelectAll, employeeIds } = query;
-        const listDays = !isSelectAll
+        const listDates = !isSelectAll
             ? (0, common_2.paginateArray)(listDayBetweenStartEnd, page, take)
             : listDayBetweenStartEnd;
-        try {
-            const listWorkSchedules = await this.workScheduleAssignmentService.getAllWorkScheduleOfMultipleDate({
-                companyId,
-                date: listDays,
-                employeeIds,
+        const listWorkSchedules = await this.getAllWorkScheduleOfManyEmployeesInDateRange({
+            companyId,
+            listDates,
+            employeeIds: employeeIds ?? [],
+        });
+        if (!listWorkSchedules) {
+            const result = listDates.map(day => ({
+                date: day,
+                workScheduleEntity: [],
+            }));
+            return new dto_1.PaginationResponseDto({
+                paginationDto: {
+                    take,
+                    page,
+                    isSelectAll: false,
+                },
+                itemCount: listDayBetweenStartEnd.length,
+                data: result,
             });
-            const result = listDays.map(day => {
-                const workScheduleEntity = listWorkSchedules[day];
-                const workScheduleMap = workScheduleEntity?.map(ws => {
-                    const assignees = ws.assignees;
-                    const groupAssignees = ws.groupAssignees;
-                    if (ws?.daySchedules?.length > 0) {
-                        const newDayScheduleEntity = ws?.daySchedules.filter(item => item.day === (0, common_2.convertDayToWeekDay)(day))[0];
-                        return {
-                            id: ws.id,
-                            name: ws.name,
-                            daySchedules: newDayScheduleEntity
-                                ? {
-                                    id: newDayScheduleEntity.id,
-                                    from: moment
-                                        .utc(newDayScheduleEntity.from, 'HH:mm:ss')
-                                        .utcOffset(ws.utcOffset)
-                                        .format('HH:mm:ssZ'),
-                                    to: moment
-                                        .utc(newDayScheduleEntity.to, 'HH:mm:ss')
-                                        .utcOffset(ws.utcOffset)
-                                        .format('HH:mm:ssZ'),
-                                }
-                                : null,
-                            color: ws.color,
-                            assignees: Object.entries(assignees || {})
-                                .slice(0, 5)
-                                .reduce((result, [key, value]) => {
-                                result[key] = value;
-                                return result;
-                            }, {}),
-                            assigneesCount: Object.values(assignees).reduce((acc, arr) => acc + 1, 0),
-                            groupAssignees: Object.entries(groupAssignees || {})
-                                .slice(0, 5)
-                                .reduce((result, [key, value]) => {
-                                result[key] = value;
-                                return result;
-                            }, {}),
-                            groupAssigneesCount: Object.values(groupAssignees).reduce((acc, arr) => acc + 1, 0),
-                        };
-                    }
+        }
+        const result = listDates.map(day => {
+            const workScheduleEntity = listWorkSchedules[day];
+            const workScheduleMap = workScheduleEntity?.map(ws => {
+                const assignees = ws.assignees;
+                const groupAssignees = ws.groupAssignees;
+                if (ws?.daySchedules?.length > 0) {
+                    const newDayScheduleEntity = ws?.daySchedules.filter(item => item.day === (0, common_2.convertDayToWeekDay)(day))[0];
                     return {
                         id: ws.id,
                         name: ws.name,
-                        daySchedules: null,
-                        color: ws?.color,
+                        daySchedules: newDayScheduleEntity
+                            ? {
+                                id: newDayScheduleEntity.id,
+                                from: moment
+                                    .utc(newDayScheduleEntity.from, 'HH:mm:ss')
+                                    .utcOffset(ws.utcOffset)
+                                    .format('HH:mm:ssZ'),
+                                to: moment
+                                    .utc(newDayScheduleEntity.to, 'HH:mm:ss')
+                                    .utcOffset(ws.utcOffset)
+                                    .format('HH:mm:ssZ'),
+                            }
+                            : null,
+                        color: ws.color,
                         assignees: Object.entries(assignees || {})
                             .slice(0, 5)
                             .reduce((result, [key, value]) => {
@@ -2562,58 +2647,63 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                         }, {}),
                         groupAssigneesCount: Object.values(groupAssignees).reduce((acc, arr) => acc + 1, 0),
                     };
-                });
-                return { date: day, workScheduleEntity: workScheduleMap ?? [] };
-            });
-            result.map(item => {
-                const workSchedules = item.workScheduleEntity;
-                const mergedWorkSchedules = workSchedules.reduce((acc, current) => {
-                    const existingItem = acc.find(item => item.id === current.id);
-                    if (existingItem) {
-                        existingItem.assignees = {
-                            ...existingItem.assignees,
-                            ...current.assignees,
-                        };
-                        existingItem.groupAssignees = {
-                            ...existingItem.groupAssignees,
-                            ...current.groupAssignees,
-                        };
-                    }
-                    else {
-                        acc.push(current);
-                    }
-                    return acc;
-                }, []);
+                }
                 return {
-                    ...item,
-                    workScheduleEntity: mergedWorkSchedules,
+                    id: ws.id,
+                    name: ws.name,
+                    daySchedules: null,
+                    color: ws?.color,
+                    assignees: Object.entries(assignees || {})
+                        .slice(0, 5)
+                        .reduce((result, [key, value]) => {
+                        result[key] = value;
+                        return result;
+                    }, {}),
+                    assigneesCount: Object.values(assignees).reduce((acc, arr) => acc + 1, 0),
+                    groupAssignees: Object.entries(groupAssignees || {})
+                        .slice(0, 5)
+                        .reduce((result, [key, value]) => {
+                        result[key] = value;
+                        return result;
+                    }, {}),
+                    groupAssigneesCount: Object.values(groupAssignees).reduce((acc, arr) => acc + 1, 0),
                 };
             });
-            return new dto_1.PaginationResponseDto({
-                paginationDto: {
-                    take,
-                    page,
-                    isSelectAll: false,
-                },
-                itemCount: listDayBetweenStartEnd.length,
-                data: result,
-            });
-        }
-        catch (err) {
-            const result = listDays.map(day => ({
-                date: day,
-                workScheduleEntity: [],
-            }));
-            return new dto_1.PaginationResponseDto({
-                paginationDto: {
-                    take,
-                    page,
-                    isSelectAll: false,
-                },
-                itemCount: listDayBetweenStartEnd.length,
-                data: result,
-            });
-        }
+            return { date: day, workScheduleEntity: workScheduleMap ?? [] };
+        });
+        result.map(item => {
+            const workSchedules = item.workScheduleEntity;
+            const mergedWorkSchedules = workSchedules.reduce((acc, current) => {
+                const existingItem = acc.find(item => item.id === current.id);
+                if (existingItem) {
+                    existingItem.assignees = {
+                        ...existingItem.assignees,
+                        ...current.assignees,
+                    };
+                    existingItem.groupAssignees = {
+                        ...existingItem.groupAssignees,
+                        ...current.groupAssignees,
+                    };
+                }
+                else {
+                    acc.push(current);
+                }
+                return acc;
+            }, []);
+            return {
+                ...item,
+                workScheduleEntity: mergedWorkSchedules,
+            };
+        });
+        return new dto_1.PaginationResponseDto({
+            paginationDto: {
+                take,
+                page,
+                isSelectAll: false,
+            },
+            itemCount: listDayBetweenStartEnd.length,
+            data: result,
+        });
     }
     async checkInDefaultWorkSchedule(companyId, checkInDefaultWorkScheduleDto) {
         const { employeeIds = [], orgIds = [] } = checkInDefaultWorkScheduleDto;
@@ -2674,6 +2764,8 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             `${workScheduleAlias}.groupAssignees`,
             `${workScheduleAlias}.default`,
             `${workScheduleAlias}.utcOffset`,
+            `${workScheduleAlias}.publishHistories`,
+            `${workScheduleAlias}.state`,
             `${daySchedulesAlias}.id`,
             `${daySchedulesAlias}.isDeleted`,
             `${daySchedulesAlias}.createdBy`,
@@ -2699,13 +2791,45 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         }
         const getAssigneeAndCount = this.countAndGetFirstFiveObjects(workScheduleDetail.assignees);
         const groupAssignees = this.countAndGetFirstFiveObjects(workScheduleDetail.groupAssignees);
-        return {
-            ...workScheduleDetail,
+        const { daySchedules, utcOffset, publishHistories } = workScheduleDetail;
+        const formatDaySchedules = daySchedules?.map(item => {
+            item.from = moment
+                .utc(item.from, 'HH:mm:ss')
+                .utcOffset(utcOffset)
+                .format('HH:mm:ssZ');
+            item.to = moment
+                .utc(item.to, 'HH:mm:ss')
+                .utcOffset(utcOffset * 60)
+                .format('HH:mm:ssZ');
+            return item;
+        });
+        let newestPublishHistoryTime = null;
+        let publishInfo = null;
+        if (publishHistories.length) {
+            newestPublishHistoryTime =
+                publishHistories?.[publishHistories.length - 1];
+            publishInfo = {
+                publisher: newestPublishHistoryTime?.updatedBy || '',
+                publishedTime: moment(newestPublishHistoryTime?.updatedOn).format('YYYY-MM-DD HH:mm:ss') || '',
+            };
+        }
+        const workScheduleDetailReturned = {
+            id: workScheduleDetail.id,
+            name: workScheduleDetail.name,
+            color: workScheduleDetail.color,
+            startDate: workScheduleDetail.startDate,
+            endDate: workScheduleDetail.endDate,
+            isDeleted: workScheduleDetail.isDeleted,
+            state: workScheduleDetail.state,
             assignees: getAssigneeAndCount.firstFiveObjects,
             assigneesCount: getAssigneeAndCount.totalCount,
             groupAssignees: groupAssignees.firstFiveObjects,
             groupAssigneesCount: groupAssignees.totalCount,
+            daySchedules: formatDaySchedules,
+            publisher: publishInfo?.publisher || null,
+            publishedTime: publishInfo?.publishedTime || null,
         };
+        return workScheduleDetailReturned;
     }
     countAndGetFirstFiveObjects(jsonData) {
         const totalCount = Object.keys(jsonData).length;
@@ -2759,6 +2883,9 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                     state: workSchedule.state,
                     groupId: belongsToGroup ? employeeAssignee.groupId : undefined,
                     groupName: belongsToGroup ? employeeAssignee.groupName : undefined,
+                    startDate: workSchedule.startDate,
+                    endDate: workSchedule.endDate,
+                    default: workSchedule.default,
                 };
             }
             return null;
@@ -2783,6 +2910,7 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             'startDate',
             'endDate',
             'state',
+            'default',
         ], query, parameters, } = args;
         const { autoDeduction, break: breakRule, daySchedule = true, } = options || {};
         const workScheduleAlias = database_1.ETableName.WORK_SCHEDULE;
@@ -2804,8 +2932,12 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
         }
         return queryBuilder.where(query, parameters);
     }
-    async getAllGroupWorkScheduleOfEmployee(employeeId, companyId) {
-        const employee = await this.employeeService.getEmployeeById(companyId, employeeId, { relations: ['orgStructure'] });
+    async getAllPublishedGroupWorkScheduleOfEmployee(employeeId, companyId) {
+        const employee = await this.employeeService.getEmployeeById(companyId, employeeId, {
+            select: {
+                orgPath: true,
+            },
+        });
         if (!employee) {
             return [];
         }
@@ -2814,23 +2946,26 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             .map(id => parseInt(id, 10))
             .filter(Boolean)
             .reverse() || [];
+        const rootGroup = await this.organizationStructureService.orgStructureRepository.findOne({
+            where: { parentId: 0, companyId, isDeleted: false },
+            select: { id: true },
+        });
+        if (rootGroup) {
+            groupIds.push(rootGroup.id);
+        }
         const workScheduleAlias = database_1.ETableName.WORK_SCHEDULE;
-        const allWorkSchedules = await this.getWorkScheduleQueryBuilder({
-            query: `${workScheduleAlias}.isDeleted = :isDeleted
-      AND ${workScheduleAlias}.companyId = :companyId
-      AND ${workScheduleAlias}.state = :state`,
+        const allWorkSchedules = (await this.getWorkScheduleQueryBuilder({
+            query: `
+          ${workScheduleAlias}.isDeleted = :isDeleted
+          AND ${workScheduleAlias}.companyId = :companyId
+          AND ${workScheduleAlias}.state = :state
+        `,
             parameters: {
                 companyId,
                 isDeleted: false,
                 state: work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED,
             },
-        }).getMany();
-        await this.workScheduleRepository.find({
-            where: {
-                isDeleted: false,
-                companyId,
-            },
-        });
+        }).getMany()) || [];
         const groupWorkSchedules = allWorkSchedules.filter(item => {
             if ((0, utils_1.isEmptyObject)(item.groupAssignees))
                 return false;
@@ -2860,10 +2995,14 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
     getMainWorkScheduleInDate(date, workSchedules) {
         if (workSchedules.length === 0)
             return null;
-        if (workSchedules.length === 1)
-            return workSchedules[0];
-        const activeWorkSchedules = workSchedules.filter(schedule => schedule.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED &&
-            moment(date).isBetween(schedule.startDate, schedule.endDate, null, '[]'));
+        const defaultWorkSchedule = workSchedules.find(item => item.default);
+        const activeWorkSchedules = workSchedules.filter(schedule => {
+            return (!schedule.default &&
+                schedule.state === work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED &&
+                moment(date).isBetween(schedule.startDate, schedule.endDate, null, '[]'));
+        });
+        if (activeWorkSchedules.length === 0)
+            return null;
         const publishNewAndOverrideWorkSchedules = [];
         const publishNewWorkSchedules = [];
         activeWorkSchedules.forEach(schedule => {
@@ -2881,31 +3020,206 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             return this.getOldestLatestWorkSchedule(publishNewAndOverrideWorkSchedules, 'latest');
         }
         if (publishNewWorkSchedules.length > 0) {
-            return this.getOldestLatestWorkSchedule(publishNewAndOverrideWorkSchedules, 'oldest');
+            return this.getOldestLatestWorkSchedule(publishNewWorkSchedules, 'oldest');
+        }
+        if (defaultWorkSchedule) {
+            return defaultWorkSchedule;
         }
         return null;
+    }
+    getGroupWorkScheduleOfEmployeeOnGivenWorkSchedules(employee, workSchedules, rootGroupId) {
+        if (!employee) {
+            return [];
+        }
+        const groupIds = employee.orgPath
+            ?.split('/')
+            .map(id => parseInt(id, 10))
+            .filter(Boolean)
+            .reverse() || [];
+        if (rootGroupId) {
+            groupIds.push(rootGroupId);
+        }
+        const groupWorkSchedules = workSchedules.filter(item => {
+            if ((0, utils_1.isEmptyObject)(item.groupAssignees))
+                return false;
+            const groupAssigneeIds = Object.values(item.groupAssignees).map(item => item.id);
+            const theClosestGroup = groupIds.find(id => groupAssigneeIds.includes(id));
+            return !!theClosestGroup;
+        });
+        return groupWorkSchedules;
+    }
+    async getAllWorkScheduleOfManyEmployeesInDateRange(params) {
+        const { employeeIds, companyId, listDates, groupByEmployee } = params;
+        const startDate = listDates[0];
+        const endDate = listDates[listDates.length - 1];
+        const workScheduleAlias = database_1.ETableName.WORK_SCHEDULE;
+        const allWorkSchedules = await this.getWorkScheduleQueryBuilder({
+            query: `${workScheduleAlias}.isDeleted = :isDeleted
+        AND ${workScheduleAlias}.companyId = :companyId
+        AND ${workScheduleAlias}.state = :state
+        AND (
+          ${workScheduleAlias}.default = :default
+          OR (
+            ${workScheduleAlias}.default = :noDefault
+            AND ${workScheduleAlias}.startDate <= :endDate
+            AND ${workScheduleAlias}.endDate >= :startDate
+          )
+        )`,
+            parameters: {
+                companyId,
+                isDeleted: false,
+                state: work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED,
+                startDate,
+                endDate,
+                default: true,
+                noDefault: false,
+            },
+        }).getMany();
+        const allEmployees = employeeIds.length
+            ? await this.employeeService.getEmployeeByIds(employeeIds, {
+                relations: [],
+                select: {
+                    id: true,
+                    orgPath: true,
+                },
+            })
+            : await this.employeeService.getAllEmployee(companyId, {
+                relations: [],
+                select: {
+                    id: true,
+                    orgPath: true,
+                },
+            });
+        console.log({ allEmployees: allEmployees.length });
+        const workScheduleByDate = {};
+        await Promise.all(allEmployees.map(async (employee) => {
+            let workScheduleAssignmentByDate = {};
+            try {
+                workScheduleAssignmentByDate =
+                    await this.workScheduleAssignmentService.getWorkScheduleOfEmployeeMultipleDate({ employeeId: employee.id, date: listDates, companyId });
+            }
+            catch (error) {
+                console.log('[ERROR] getWorkScheduleOfEmployeeMultipleDate: ', error.message);
+            }
+            const rootGroup = await this.organizationStructureService.orgStructureRepository.findOne({
+                where: { parentId: 0, companyId, isDeleted: false },
+                select: { id: true },
+            });
+            const groupWorkSchedules = this.getGroupWorkScheduleOfEmployeeOnGivenWorkSchedules(employee, allWorkSchedules, rootGroup?.id);
+            const groupWorkScheduleIds = groupWorkSchedules.map(item => item.id);
+            const assignedWorkSchedules = allWorkSchedules.filter(workSchedule => !groupWorkScheduleIds.includes(workSchedule.id) &&
+                Object.keys(workSchedule.assignees).includes(employee.id.toString()));
+            const workSchedules = [...groupWorkSchedules, ...assignedWorkSchedules];
+            const uniqueWorkScheduleIds = new Set();
+            listDates.forEach(date => {
+                const workScheduleList = workScheduleByDate[date] || [];
+                if (workScheduleAssignmentByDate[date]) {
+                    if (!uniqueWorkScheduleIds.has(workScheduleAssignmentByDate[date].id)) {
+                        workScheduleList.push(workScheduleAssignmentByDate[date]);
+                        uniqueWorkScheduleIds.add(workScheduleAssignmentByDate[date].id);
+                    }
+                }
+                else {
+                    const workSchedule = this.getMainWorkScheduleInDate(date, workSchedules);
+                    if (workSchedule && !uniqueWorkScheduleIds.has(workSchedule.id)) {
+                        workScheduleList.push(workSchedule);
+                        uniqueWorkScheduleIds.add(workSchedule.id);
+                    }
+                }
+                workScheduleByDate[date] = workScheduleList;
+            });
+        }));
+        return workScheduleByDate;
+    }
+    async getWorkScheduleOfManyEmployeesInDateRange(params) {
+        const { employeeIds, companyId, startDate, groupByEmployee } = params;
+        const endDate = params.endDate || startDate;
+        const workScheduleAlias = database_1.ETableName.WORK_SCHEDULE;
+        if (employeeIds.length === 0) {
+            throw new common_1.BadRequestException('No employees');
+        }
+        const allWorkSchedules = await this.getWorkScheduleQueryBuilder({
+            query: `${workScheduleAlias}.isDeleted = :isDeleted
+        AND ${workScheduleAlias}.companyId = :companyId
+        AND ${workScheduleAlias}.state = :state
+        AND (
+          ${workScheduleAlias}.default = :default
+          OR (
+            ${workScheduleAlias}.default = :noDefault
+            AND ${workScheduleAlias}.startDate <= :endDate
+            AND ${workScheduleAlias}.endDate >= :startDate
+          )
+        )`,
+            parameters: {
+                companyId,
+                isDeleted: false,
+                state: work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED,
+                startDate,
+                endDate,
+                default: true,
+                noDefault: false,
+            },
+        }).getMany();
+        const allEmployees = await this.employeeService.getEmployeeByIds(employeeIds, {
+            relations: [],
+            select: {
+                id: true,
+                orgPath: true,
+            },
+        });
+        const listDates = (0, common_2.getDaysBetweenDates)(startDate, endDate);
+        const workScheduleByDate = {};
+        const workScheduleByEmployee = {};
+        await Promise.all(allEmployees.map(async (employee) => {
+            let workScheduleAssignmentByDate = {};
+            try {
+                workScheduleAssignmentByDate =
+                    await this.workScheduleAssignmentService.getWorkScheduleOfEmployeeMultipleDate({ employeeId: employee.id, date: listDates, companyId });
+            }
+            catch (error) {
+                console.log('[ERROR] getWorkScheduleOfEmployeeMultipleDate: ', error.message);
+            }
+            const rootGroup = await this.organizationStructureService.orgStructureRepository.findOne({
+                where: { parentId: 0, companyId, isDeleted: false },
+                select: { id: true },
+            });
+            const groupWorkSchedules = this.getGroupWorkScheduleOfEmployeeOnGivenWorkSchedules(employee, allWorkSchedules, rootGroup?.id);
+            const groupWorkScheduleIds = groupWorkSchedules.map(item => item.id);
+            const assignedWorkSchedules = allWorkSchedules.filter(workSchedule => !groupWorkScheduleIds.includes(workSchedule.id) &&
+                Object.keys(workSchedule.assignees).includes(employee.id.toString()));
+            const workSchedules = [...groupWorkSchedules, ...assignedWorkSchedules];
+            listDates.forEach(date => {
+                if (workScheduleAssignmentByDate[date]) {
+                    if (groupByEmployee) {
+                        (0, set_util_1.set)(workScheduleByEmployee, `${employee.id}.${date}`, workScheduleAssignmentByDate[date]);
+                    }
+                    else {
+                        (0, set_util_1.set)(workScheduleByDate, `${date}.${employee.id}`, workScheduleAssignmentByDate[date]);
+                    }
+                    return;
+                }
+                const workSchedule = this.getMainWorkScheduleInDate(date, workSchedules);
+                if (workSchedule) {
+                    if (groupByEmployee) {
+                        (0, set_util_1.set)(workScheduleByEmployee, `${employee.id}.${date}`, workSchedule);
+                    }
+                    else {
+                        (0, set_util_1.set)(workScheduleByDate, `${date}.${employee.id}`, workSchedule);
+                    }
+                }
+            });
+        }));
+        return groupByEmployee ? workScheduleByEmployee : workScheduleByDate;
     }
     async getWorkScheduleOfEmployeeInDateRange(params) {
         const { employeeId, companyId, startDate } = params;
         const endDate = params.endDate || startDate;
         const workScheduleAlias = database_1.ETableName.WORK_SCHEDULE;
-        const groupWorkSchedules = (await this.getAllGroupWorkScheduleOfEmployee(employeeId, companyId)) ||
-            [];
-        let query = '';
-        if ((0, database_1.databaseType)() === database_1.EDbSqlType.Postgres) {
-            query = `${workScheduleAlias}.assignees::jsonb ? :employeeId
-        AND ${workScheduleAlias}.isDeleted = :isDeleted
+        const groupWorkSchedules = await this.getAllPublishedGroupWorkScheduleOfEmployee(employeeId, companyId);
+        const ws = await this.getWorkScheduleQueryBuilder({
+            query: `${workScheduleAlias}.isDeleted = :isDeleted
         AND ${workScheduleAlias}.companyId = :companyId
-        AND ${workScheduleAlias}.state = :state`;
-        }
-        else if ((0, database_1.databaseType)() === database_1.EDbSqlType.Mssql) {
-            query = `JSON_VALUE(${workScheduleAlias}.assignees, '$."employeeId"') = :employeeId
-        AND ${workScheduleAlias}.isDeleted = :isDeleted
-        AND ${workScheduleAlias}.companyId = :companyId
-        AND ${workScheduleAlias}.state = :state`;
-        }
-        const assignedWorkSchedules = await this.getWorkScheduleQueryBuilder({
-            query,
+        AND ${workScheduleAlias}.state = :state`,
             parameters: {
                 employeeId: employeeId.toString(),
                 companyId,
@@ -2913,14 +3227,8 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
                 state: work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED,
             },
         }).getMany();
+        const assignedWorkSchedules = ws.filter(item => !!item.assignees?.[employeeId]);
         const workSchedules = [...groupWorkSchedules, ...assignedWorkSchedules];
-        const workScheduleById = {};
-        workSchedules.forEach(workSchedule => {
-            const { id } = workSchedule;
-            if (id && !workScheduleById?.[id]) {
-                workScheduleById[id] = workSchedule;
-            }
-        });
         const listDates = (0, common_2.getDaysBetweenDates)(startDate, endDate);
         let workScheduleAssignmentByDate = {};
         try {
@@ -2968,6 +3276,8 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             `${workScheduleAlias}.assignees`,
             `${workScheduleAlias}.groupAssignees`,
             `${workScheduleAlias}.utcOffset`,
+            `${workScheduleAlias}.publishType`,
+            `${workScheduleAlias}.publishHistories`,
             `${dayScheduleAlias}.id`,
             `${dayScheduleAlias}.day`,
             `${dayScheduleAlias}.from`,
@@ -2982,6 +3292,95 @@ let WorkScheduleService = class WorkScheduleService extends database_1.TypeOrmBa
             };
         });
         return newWorkSchedule;
+    }
+    async checkIsExistedWsDefaultAtFirstTime(args) {
+        const { companyId } = args;
+        const workSchedule = await this.workScheduleRepository.findOne({
+            where: {
+                companyId,
+                default: true,
+                isDeleted: false,
+            },
+        });
+        if (!workSchedule) {
+            try {
+                const createWorkScheduleBody = {
+                    name: 'Work Schedule Default',
+                    utcOffset: 7,
+                    workArrangement: common_2.WorkArrangement.FIXED,
+                    default: true,
+                    daySchedules: [
+                        {
+                            day: common_2.DayType.Mon,
+                            from: '02:00:00 +00:00',
+                            to: '10:00:00 +00:00',
+                            duration: 0,
+                            unitTime: common_2.UnitTime.MINUTE,
+                        },
+                        {
+                            day: common_2.DayType.Tue,
+                            from: '02:00:00 +00:00',
+                            to: '10:00:00 +00:00',
+                            duration: 0,
+                            unitTime: common_2.UnitTime.MINUTE,
+                        },
+                        {
+                            day: common_2.DayType.Wed,
+                            from: '02:00:00 +00:00',
+                            to: '10:00:00 +00:00',
+                            duration: 0,
+                            unitTime: common_2.UnitTime.MINUTE,
+                        },
+                        {
+                            day: common_2.DayType.Thu,
+                            from: '02:00:00 +00:00',
+                            to: '10:00:00 +00:00',
+                            duration: 0,
+                            unitTime: common_2.UnitTime.MINUTE,
+                        },
+                        {
+                            day: common_2.DayType.Fri,
+                            from: '02:00:00 +00:00',
+                            to: '10:00:00 +00:00',
+                            duration: 0,
+                            unitTime: common_2.UnitTime.MINUTE,
+                        },
+                    ],
+                    unitTime: common_2.UnitTime.MINUTE,
+                    excludeEarlyClockIn: true,
+                    breakType: common_2.BreakType.Paid,
+                    breaks: [],
+                    autoDeductions: [],
+                    overtime: {
+                        endWorkDayAt: '17:00:00 +00:00',
+                        timeRangeStyle: common_2.TimeRangeStyle.Hour,
+                    },
+                    color: '#ff6600',
+                    state: work_schedule_state_enum_1.EWorkScheduleState.PUBLISHED,
+                    locations: [],
+                };
+                const workScheduleDefault = await this.handleCreateWorkScheduleLeave(createWorkScheduleBody, companyId, 'system@hrforte.com');
+                if (workScheduleDefault) {
+                    const employeeList = await this.employeeService.getAllEmployeeByCompanyId(companyId);
+                    const assigneesDto = employeeList.reduce((acc, employee) => {
+                        acc[employee.id] = {
+                            employeeRef: employee.employeeRef,
+                            employeeNo: employee.employeeNo,
+                            email: employee.email,
+                            fullNameLocal: employee.fullNameLocal,
+                            fullNameEn: employee.fullNameEn,
+                        };
+                        return acc;
+                    }, {});
+                    await this.updateAddAssigneesOfWorkSchedule(workScheduleDefault.workScheduleEntity.id, assigneesDto, companyId, 'system@hrforte.com');
+                }
+                return false;
+            }
+            catch (error) {
+                console.error('[ERROR] Create work schedule first time fail', error);
+            }
+        }
+        return true;
     }
 };
 exports.WorkScheduleService = WorkScheduleService;

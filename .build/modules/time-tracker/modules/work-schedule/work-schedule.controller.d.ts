@@ -10,6 +10,7 @@ export declare class WorkScheduleController {
     private readonly workScheduleService;
     constructor(workScheduleService: WorkScheduleService);
     getTTWorkScheduleDefault({ companyId }: BaseParamDto, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<any>;
+    checkIsExistedWs({ companyId }: BaseParamDto): Promise<boolean>;
     getLeaveWorkScheduleDefault({ companyId }: BaseParamDto): Promise<import("../../../../core/database").WorkScheduleEntity | null>;
     getTTWorkScheduleByWorkScheduleId(workScheduleId: string, { companyId }: BaseParamDto, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<any>;
     getAllWorkSchedulesIsOverlap(params: PublishWorkScheduleParamsDto, query: GetAllWorkScheduleOverlapQueryDto): Promise<import("../../../../core/database").WorkScheduleEntity[]>;

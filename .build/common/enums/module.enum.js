@@ -14,6 +14,6 @@ var EMainModuleNumber;
     EMainModuleNumber[EMainModuleNumber["EMPLOYEE"] = 1] = "EMPLOYEE";
     EMainModuleNumber[EMainModuleNumber["LEAVE"] = 2] = "LEAVE";
     EMainModuleNumber[EMainModuleNumber["PAYROLL"] = 5] = "PAYROLL";
-    EMainModuleNumber[EMainModuleNumber["WORK_SCHEDULE"] = 20] = "WORK_SCHEDULE";
+    EMainModuleNumber[EMainModuleNumber["WORK_SCHEDULE"] = 12] = "WORK_SCHEDULE";
 })(EMainModuleNumber || (exports.EMainModuleNumber = EMainModuleNumber = {}));
 //# sourceMappingURL=module.enum.js.map

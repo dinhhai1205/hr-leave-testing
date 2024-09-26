@@ -68,9 +68,34 @@ let TimeTrackerEmployeeController = class TimeTrackerEmployeeController {
                     data: { employeeIds: ttEmployeeIds },
                     segments: { companyId: timeTrackerCompanyId },
                 }, { useMasterApiKey: true });
+                const { data: activityData } = await this.apiService.request({
+                    type: 'GET_ALL_ACTIVITY_OF_EMPLOYEES',
+                    data: { employeeIds: ttEmployeeIds },
+                    segments: { companyId: timeTrackerCompanyId },
+                }, { useMasterApiKey: true });
+                const employeeIdsMapping = new Map(employeeMappings.map(e => [e.employeeId, e.timeTrackerEmployeeId]));
+                let employeeActivityMap = {};
+                if (activityData && activityData.length > 0) {
+                    employeeActivityMap = activityData.reduce((acc, activity) => {
+                        const employeeId = Array.from(employeeIdsMapping.entries()).find(([_, id]) => id === activity.employeeId)?.[0];
+                        if (employeeId !== undefined) {
+                            if (!acc[employeeId])
+                                acc[employeeId] = [];
+                            acc[employeeId].push({
+                                id: activity.activityId,
+                                name: activity.activity?.name,
+                                description: activity.activity?.description,
+                                activityCode: activity.activity?.activityCode,
+                                ttEmployeeId: activity.employeeId,
+                                employeeId: employeeId.toString(),
+                            });
+                        }
+                        return acc;
+                    }, {});
+                }
+                let employeeProjectsMap = {};
                 if (projectsData && projectsData.length > 0) {
-                    const employeeIdsMapping = new Map(employeeMappings.map(e => [e.employeeId, e.timeTrackerEmployeeId]));
-                    const employeeProjectsMap = projectsData?.reduce((acc, project) => {
+                    employeeProjectsMap = projectsData?.reduce((acc, project) => {
                         const employeeId = Array.from(employeeIdsMapping.entries()).find(([_, id]) => id === project.employeeId)?.[0];
                         if (employeeId !== undefined) {
                             if (!acc[employeeId])
@@ -84,29 +109,41 @@ let TimeTrackerEmployeeController = class TimeTrackerEmployeeController {
                         }
                         return acc;
                     }, {});
-                    const employeeWithProject = data?.map(employee => {
-                        return {
-                            ...employee,
-                            projects: employeeProjectsMap[employee.id] || [],
-                        };
+                }
+                const employeeWithProjectAndActivity = data?.map(employee => {
+                    return {
+                        ...employee,
+                        projects: employeeProjectsMap[employee.id] || [],
+                        activities: employeeActivityMap[employee.id] || [],
+                    };
+                });
+                const { projectIds, moduleType, taskIds } = paginationQueryDto;
+                if (moduleType === employee_module_type_enum_1.EEmployeeModuleType.PROJECT && projectIds?.length) {
+                    const filteredEmployees = employeeWithProjectAndActivity.filter(employee => {
+                        const hasProjectId = employee.projects.some(project => projectIds.includes(project.id));
+                        return !hasProjectId;
                     });
-                    const { projectIds, moduleType } = paginationQueryDto;
-                    if (moduleType === employee_module_type_enum_1.EEmployeeModuleType.PROJECT &&
-                        projectIds?.length) {
-                        const filteredEmployees = employeeWithProject.filter(employee => {
-                            const hasProjectId = employee.projects.some(project => projectIds.includes(project.id));
-                            return !hasProjectId;
-                        });
-                        return {
-                            ...result,
-                            data: filteredEmployees ? filteredEmployees : data,
-                        };
-                    }
                     return {
                         ...result,
-                        data: employeeWithProject ? employeeWithProject : data,
+                        data: filteredEmployees ? filteredEmployees : data,
                     };
                 }
+                if (moduleType === employee_module_type_enum_1.EEmployeeModuleType.TASK && taskIds?.length) {
+                    const filteredEmployees = employeeWithProjectAndActivity.filter(employee => {
+                        const hasTaskIdId = employee.activities.some(activity => taskIds.includes(activity.id));
+                        return !hasTaskIdId;
+                    });
+                    return {
+                        ...result,
+                        data: filteredEmployees ? filteredEmployees : data,
+                    };
+                }
+                return {
+                    ...result,
+                    data: employeeWithProjectAndActivity
+                        ? employeeWithProjectAndActivity
+                        : data,
+                };
             }
         }
         return result;

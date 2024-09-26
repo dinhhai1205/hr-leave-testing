@@ -5,6 +5,7 @@ export declare class WorkScheduleAssignmentHrforteNotificationMapper {
         clientUrl: string;
         actorEmail: string;
         workScheduleId: number;
+        workScheduleName: string;
         employees: Array<Pick<EmployeeEntity, 'email'>>;
         dateFrom: string;
         dateTo: string;

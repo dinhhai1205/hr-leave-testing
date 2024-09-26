@@ -110,15 +110,11 @@ let OvertimeService = class OvertimeService {
             }
         }
         const totalDayInCycle = moment(dateTo, 'YYYY-MM-DD').diff(moment(dateFrom, 'YYYY-MM-DD'), 'days') + 1;
-        const halfMonth = totalDayInCycle <= 20;
         let result = totalDayInCycle;
         if (payrollGroup.otUseStdWorkDay) {
             result = payrollGroup.otStdWorkDay;
             if (payrollGroup.otStdDayByYear)
                 result = payrollGroup.otStdWorkDay / 12;
-            if (halfMonth) {
-                result /= 2;
-            }
             return {
                 overtimeDetailId,
                 employeeId,
@@ -181,15 +177,11 @@ let OvertimeService = class OvertimeService {
             }
         }
         const totalDayInCycle = moment(dateTo, 'YYYY-MM-DD').diff(moment(dateFrom, 'YYYY-MM-DD'), 'days') + 1;
-        const halfMonth = totalDayInCycle <= 20;
         let result = totalDayInCycle;
         if (payrollGroup.otUseStdWorkDay) {
             result = payrollGroup.otStdWorkDay;
             if (payrollGroup.otStdDayByYear)
                 result = payrollGroup.otStdWorkDay / 12;
-            if (halfMonth) {
-                result /= 2;
-            }
             return {
                 overtimeDetailId,
                 employeeId,

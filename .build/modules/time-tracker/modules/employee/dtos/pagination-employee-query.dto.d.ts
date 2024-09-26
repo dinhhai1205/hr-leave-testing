@@ -3,6 +3,7 @@ export declare class PaginationEmployeeQueryDto {
     moduleType?: EEmployeeModuleType;
     readonly workScheduleIds?: number[];
     readonly projectIds?: string[];
+    readonly taskIds?: string[];
     readonly isSelectAll: boolean;
     readonly page: number;
     readonly take: number;

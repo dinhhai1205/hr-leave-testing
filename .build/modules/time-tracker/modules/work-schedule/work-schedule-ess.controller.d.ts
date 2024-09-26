@@ -6,6 +6,9 @@ export declare class WorkScheduleESSController {
     constructor(workScheduleService: WorkScheduleService);
     getAllWorkSchedulesFromToDate(companyId: number, startDate: string, endDate: string, query: GetAllWorkScheduleInMultipleDateQueryDto): Promise<import("../../../../common/dto").PaginationResponseDto<{
         date: string;
+        workScheduleEntity: import("../../../../core/database").WorkScheduleEntity[];
+    }> | import("../../../../common/dto").PaginationResponseDto<{
+        date: string;
         workScheduleEntity: {
             id: number;
             name: string;
@@ -20,9 +23,6 @@ export declare class WorkScheduleESSController {
             groupAssignees: any;
             groupAssigneesCount: number;
         }[];
-    }> | import("../../../../common/dto").PaginationResponseDto<{
-        date: string;
-        workScheduleEntity: import("../../../../core/database").WorkScheduleEntity[];
     }>>;
     getListBreaksOfWorkSchedule(employeeId: number, paginationQueryDto: PaginationQueryWithDateDto, { companyId }: BaseParamDto): Promise<import("../../../../common/dto").PaginationResponseDto<import("../../../../core/database").BreakRuleEntity>>;
     getWorkScheduleOfEmployeeFromToDate(companyId: number, startDate: string, endDate: string, query: PaginationQueryDto, employeeId: number): Promise<import("../../../../common/dto").PaginationResponseDto<{
@@ -74,6 +74,13 @@ export declare class WorkScheduleESSController {
         }[];
     }>;
     getWorkScheduleDetail(companyId: number, workScheduleId: number): Promise<{
+        id: number;
+        name: string;
+        color: string;
+        startDate: Date;
+        endDate: Date;
+        isDeleted: boolean;
+        state: import("./enums/work-schedule-state.enum").EWorkScheduleState;
         assignees: {
             [k: string]: unknown;
         };
@@ -82,38 +89,8 @@ export declare class WorkScheduleESSController {
             [k: string]: unknown;
         };
         groupAssigneesCount: number;
-        ttWorkScheduleId: string;
-        name: string;
-        utcOffset: number;
-        workArrangement: import("../../common").WorkArrangement;
-        breakType: import("../../common").BreakType;
-        default: boolean;
-        weeklyHours: number;
-        unitTime: import("../../common").UnitTime;
-        excludeEarlyClockIn: boolean;
-        companyId: number;
-        overtimeId: number;
-        endWorkDayAt: string;
-        publishType: import("./enums/work-schedule-publish-type.enum").EWorkSchedulePublishType;
-        color: string;
-        startDate: Date;
-        endDate: Date;
-        state: import("./enums/work-schedule-state.enum").EWorkScheduleState;
-        threshold: number;
-        publishHistories: import("./interfaces/work-schedule-publish-history.interface").IWorkSchedulePublishHistory[];
-        autoDeductions: import("../../../../core/database").AutoDeductionEntity[];
-        breaks: import("../../../../core/database").BreakRuleEntity[];
-        locationWorkSchedules: import("../../../../core/database").LocationWorkScheduleEntity[];
         daySchedules: import("../../../../core/database").DayScheduleEntity[];
-        workScheduleAssignment: import("../../../../core/database/entities/work-schedule-assignment.entity").WorkScheduleAssignmentEntity[];
-        employees: import("../../../../core/database").EmployeeEntity[];
-        workScheduleTags: import("../../../../core/database").WorkScheduleTagEntity[];
-        organizationStructures: import("../../../../core/database").OrganizationStructureEntity[];
-        id: number;
-        isDeleted: boolean;
-        createdBy: string;
-        createdOn: Date;
-        updatedBy?: string;
-        updatedOn?: Date;
+        publisher: string | null;
+        publishedTime: string | null;
     } | null>;
 }

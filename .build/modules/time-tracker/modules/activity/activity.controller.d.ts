@@ -1,8 +1,10 @@
 import { ActivityService } from './activity.service';
-import { ArchivedActivity, CreateActivityDto, UpdateActivityBodyDto } from './dtos';
+import { AddNewActivityAssigneeDto, ArchivedActivity, CreateActivityDto, UpdateActivityBodyDto } from './dtos';
 import { TimeTrackerMapping } from '../../common/decorators/type';
 import { PaginationQueryDto } from '../../common';
 import { AssigneesProjectQueryDto } from '../project/dtos';
+import { BaseParamDto } from '../../../../common/dto';
+import { RemoveActivityAssigneesDto } from './dtos/remove-assignees.dto';
 export declare class ActivityController {
     private readonly activityService;
     constructor(activityService: ActivityService);
@@ -83,5 +85,7 @@ export declare class ActivityController {
     }>;
     createActivity(companyId: number, createActivity: CreateActivityDto, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<import("./activity.entity").ActivityEntity>;
     archivedActivity(companyId: number, body: ArchivedActivity, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<import("./activity.entity").ActivityEntity[]>;
+    addNewAssignee({ companyId }: BaseParamDto, activityId: string, addNewAssigneeDto: AddNewActivityAssigneeDto, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<any>;
+    removeMultipleAssignees({ companyId }: BaseParamDto, activityId: string, removeAssigneesDto: RemoveActivityAssigneesDto, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<any>;
     updateActivity(companyId: number, activityId: string, updateActivity: UpdateActivityBodyDto, { timeTrackerCompanyId }: TimeTrackerMapping): Promise<import("./activity.entity").ActivityEntity>;
 }

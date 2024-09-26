@@ -623,6 +623,7 @@ let GroupService = class GroupService {
                     dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
                     userEmail,
                     verb: `has just assigned you to a published work schedule "${name}". Check it out now!`,
+                    workScheduleName: workSchedule.name,
                 });
             }
         }
@@ -694,6 +695,7 @@ let GroupService = class GroupService {
                     dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
                     userEmail,
                     verb: `has just assigned you to a published work schedule "${name}". Check it out now!`,
+                    workScheduleName: workSchedule.name,
                 });
             }
         }
@@ -760,6 +762,7 @@ let GroupService = class GroupService {
                         : workSchedule?.endDate,
                     userEmail,
                     verb: `has just unassigned you from the published work schedule "${workSchedule?.name}". Check it out!`,
+                    workScheduleName: workSchedule.name,
                 });
             });
             await Promise.all(notifications);
@@ -772,9 +775,10 @@ let GroupService = class GroupService {
                     updatedBy: userEmail,
                     updatedOn: moment.utc().toDate(),
                 })
-                    .where('id IN (:...orgIds) AND companyId = :companyId AND isDeleted = false', {
+                    .where('id IN (:...orgIds) AND companyId = :companyId AND isDeleted = :isDeleted', {
                     orgIds,
                     companyId,
+                    isDeleted: false,
                 })
                     .execute();
             }
@@ -877,6 +881,7 @@ let GroupService = class GroupService {
                         : workSchedule?.endDate,
                     userEmail,
                     verb: `has just unassigned you from the published work schedule "${workSchedule.name}". Check it out!`,
+                    workScheduleName: workSchedule.name,
                 });
             });
             await Promise.all(notifications);
@@ -889,9 +894,10 @@ let GroupService = class GroupService {
                     updatedBy: userEmail,
                     updatedOn: moment.utc().toDate(),
                 })
-                    .where('id IN (:...orgIds) AND companyId = :companyId AND isDeleted = false', {
+                    .where('id IN (:...orgIds) AND companyId = :companyId AND isDeleted = :isDeleted', {
                     orgIds,
                     companyId,
+                    isDeleted: false,
                 })
                     .execute();
             }

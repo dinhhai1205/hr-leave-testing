@@ -670,6 +670,7 @@ let TimeSheetAdjustmentService = class TimeSheetAdjustmentService extends databa
         const organizationStructureAlias = database_1.ETableName.ORGANIZATION_STRUCTURE;
         const payrollGroupAlias = database_1.ETableName.PAYROLL_GROUP;
         const costCenterAlias = database_1.ETableName.COST_CENTER;
+        const prtrxEmpAlias = database_1.ETableName.PRTRX_EMP;
         const queryBuilder = this.timeSheetAdjustmentRepository
             .createQueryBuilder(adjustmentAlias)
             .leftJoinAndSelect(`${adjustmentAlias}.payroll`, payrollAlias, `${payrollAlias}.is_deleted = :isDeleted AND ${payrollAlias}.id = ${adjustmentAlias}.payroll_timesheet_id`, { isDeleted: false })
@@ -677,7 +678,8 @@ let TimeSheetAdjustmentService = class TimeSheetAdjustmentService extends databa
             .leftJoinAndSelect(`${employeeAlias}.orgStructure`, organizationStructureAlias, `${organizationStructureAlias}.id = ${employeeAlias}.organization_element_id AND ${organizationStructureAlias}.is_deleted = :isDeleted`, { isDeleted: false })
             .leftJoinAndSelect(`${employeeAlias}.payrollGroups`, payrollGroupAlias, `${payrollGroupAlias}.id = ${employeeAlias}.payroll_group_id AND ${payrollGroupAlias}.is_deleted = :isDeleted`, { isDeleted: false })
             .leftJoinAndSelect(`${employeeAlias}.costCenter`, costCenterAlias, `${costCenterAlias}.id = ${employeeAlias}.cost_center_id AND ${costCenterAlias}.is_deleted = :isDeleted`, { isDeleted: false })
-            .where(`${adjustmentAlias}.company_id = :companyId AND ${payrollAlias}.prtrx_hdr_id = :prtrxHdrId`, { companyId: companyId, prtrxHdrId })
+            .leftJoinAndSelect(`${employeeAlias}.prtrxEmps`, prtrxEmpAlias, `${prtrxEmpAlias}.employee_id = ${employeeAlias}.id AND ${prtrxEmpAlias}.is_deleted = :isDeleted`, { isDeleted: false })
+            .where(`${adjustmentAlias}.company_id = :companyId AND ${payrollAlias}.prtrx_hdr_id = :prtrxHdrId AND ${prtrxEmpAlias}.included = :included AND ${prtrxEmpAlias}.payroll_trx_header_id = :prtrxHdrId`, { companyId: companyId, prtrxHdrId, included: true })
             .andWhere(`${adjustmentAlias}.is_deleted = :isDeleted`, {
             isDeleted: false,
         });

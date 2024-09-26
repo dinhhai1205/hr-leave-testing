@@ -7,6 +7,7 @@ import { EWorkScheduleState } from '../enums/work-schedule-state.enum';
 import { IWorkScheduleAssignee } from '../interfaces/work-schedule-assignee.interface';
 import { IWorkScheduleGroupAssignee } from '../interfaces/work-schedule-group-assignee.interface';
 import { EWorkSchedulePublishType } from '../enums/work-schedule-publish-type.enum';
+import { IWorkSchedulePublishHistory } from '../interfaces/work-schedule-publish-history.interface';
 export declare class CreateWorkScheduleBodyDTO {
     name: string;
     ttWorkScheduleId?: string;
@@ -14,7 +15,7 @@ export declare class CreateWorkScheduleBodyDTO {
     workArrangement: WorkArrangement;
     breakType: BreakType;
     default: boolean;
-    weeklyHours: number;
+    weeklyHours?: number;
     unitTime: UnitTime;
     excludeEarlyClockIn: boolean;
     autoDeductions: CreateAutoDeductionDTO[];
@@ -33,4 +34,5 @@ export declare class CreateWorkScheduleBodyDTO {
     assignees?: IWorkScheduleAssignee;
     groupAssignees?: IWorkScheduleGroupAssignee;
     publishType?: EWorkSchedulePublishType;
+    publishHistories?: IWorkSchedulePublishHistory[];
 }

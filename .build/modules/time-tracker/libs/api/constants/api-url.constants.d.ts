@@ -171,11 +171,23 @@ export declare const TIME_TRACKER_URL: {
         method: string;
         url: string;
     };
+    GET_ALL_ACTIVITY_OF_EMPLOYEES: {
+        method: string;
+        url: string;
+    };
     GET_ALL_ACTIVITY_GROUP_ASSIGNEE: {
         method: string;
         url: string;
     };
     GET_ALL_ACTIVITY_ESS: {
+        method: string;
+        url: string;
+    };
+    UPDATE_ACTIVITY_ADD_NEW_EMPLOYEES: {
+        method: string;
+        url: string;
+    };
+    UPDATE_ACTIVITY_REMOVE_EMPLOYEE: {
         method: string;
         url: string;
     };

@@ -5,3 +5,6 @@ export * from './create-activity-payload.dto';
 export * from './get-all-activity-payload.dto';
 export * from './update-activity-body.dto';
 export * from './update-activity-payload.dto';
+export * from './add-new-assignees.dto';
+export * from './add-new-assignees-payload.dto';
+export * from './remove-assignees-payload.dto';

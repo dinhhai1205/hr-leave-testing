@@ -151,6 +151,58 @@ let ActivityService = class ActivityService {
         });
         return data;
     }
+    async addNewAssigneeToActivity(companyId, payload, options) {
+        const { assigneeEmployeeIds = [] } = payload.payload;
+        let employeeMappings = [];
+        if (assigneeEmployeeIds.length > 0) {
+            employeeMappings =
+                await this.employeeMappingService.getManyEmployeeMappingByIds({
+                    companyId,
+                    employeeIds: assigneeEmployeeIds,
+                });
+            if (!employeeMappings.length) {
+                throw new common_1.BadRequestException('Employee mappings not found');
+            }
+        }
+        const payloadData = {
+            assigneeEmployeeIds: employeeMappings.map(e => e.timeTrackerEmployeeId),
+        };
+        const { data } = await this.apiService.request({
+            type: 'UPDATE_ACTIVITY_ADD_NEW_EMPLOYEES',
+            data: payloadData,
+            segments: {
+                companyId: options.companyId,
+                activityId: payload.activityId,
+            },
+        });
+        return data;
+    }
+    async removeMultipleEmployeesOfActivity(companyId, payload, options) {
+        const { assigneeEmployeeIds = [] } = payload.payload;
+        let employeeMappings = [];
+        if (assigneeEmployeeIds.length > 0) {
+            employeeMappings =
+                await this.employeeMappingService.getManyEmployeeMappingByIds({
+                    companyId,
+                    employeeIds: assigneeEmployeeIds,
+                });
+            if (!employeeMappings.length) {
+                throw new common_1.BadRequestException('Employee mappings not found');
+            }
+        }
+        const payloadData = {
+            assigneeEmployeeIds: employeeMappings.map(e => e.timeTrackerEmployeeId),
+        };
+        const { data } = await this.apiService.request({
+            type: 'UPDATE_ACTIVITY_REMOVE_EMPLOYEE',
+            data: payloadData,
+            segments: {
+                companyId: options.companyId,
+                activityId: payload.activityId,
+            },
+        });
+        return data;
+    }
 };
 exports.ActivityService = ActivityService;
 exports.ActivityService = ActivityService = __decorate([

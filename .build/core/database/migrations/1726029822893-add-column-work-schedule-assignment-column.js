@@ -3,19 +3,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AddColumnWorkScheduleAssignmentColumn1726029822893 = void 0;
 const typeorm_1 = require("typeorm");
 const enums_1 = require("../enums");
+const utils_1 = require("../utils");
 const get_boolean_value_util_1 = require("../utils/get-boolean-value.util");
 class AddColumnWorkScheduleAssignmentColumn1726029822893 {
     async up(queryRunner) {
         const columns = [
             new typeorm_1.TableColumn({
                 name: 'is_swapped',
-                type: 'boolean',
+                type: (0, utils_1.columnType)('BOOLEAN'),
                 isNullable: true,
                 default: (0, get_boolean_value_util_1.getBooleanValue)('FALSE'),
             }),
             new typeorm_1.TableColumn({
                 name: 'is_unpublished',
-                type: 'boolean',
+                type: (0, utils_1.columnType)('BOOLEAN'),
                 isNullable: true,
                 default: (0, get_boolean_value_util_1.getBooleanValue)('FALSE'),
             }),

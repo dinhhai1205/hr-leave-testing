@@ -5,7 +5,6 @@ import { AutoDeductionEntity, BreakRuleEntity, DayScheduleEntity, EmployeeEntity
 import { HrforteNotificationProducer, LeaveWorkScheduleProducer } from '../../../../core/queue/producers';
 import { EmployeeService } from '../../../../modules/user/modules/employee/employee.service';
 import { OrganizationStructureService } from '../../../general/modules/organization-structure/organization-structure.service';
-import { UnitTime } from '../../common';
 import { TimeTrackerApiService } from '../../libs/api/api.service';
 import { AutoDeductionService } from '../auto-deduction/auto-deduction.service';
 import { BreakRuleService } from '../break-rule/break-rule.service';
@@ -22,6 +21,7 @@ import { IWorkScheduleAssignee } from './interfaces/work-schedule-assignee.inter
 import { IWorkScheduleGroupAssignee } from './interfaces/work-schedule-group-assignee.interface';
 import { AppConfig } from '../../../../config';
 import { GetWorkScheduleArguments, GetWorkScheduleOptions } from './work-schedule.type';
+import { IWorkSchedulePublishHistory } from './interfaces/work-schedule-publish-history.interface';
 export declare class WorkScheduleService extends TypeOrmBaseService<WorkScheduleEntity> {
     private readonly apiService;
     private readonly workScheduleRepository;
@@ -83,7 +83,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
     }>;
     getLeaveGlobalWorkScheduleDefault(): Promise<WorkScheduleEntity | null>;
     getLeaveCompanyWorkScheduleDefault(companyId: number): Promise<WorkScheduleEntity | null>;
-    getWorkScheduleByName(name: string): Promise<WorkScheduleEntity[]>;
+    getWorkScheduleByName(name: string, companyId: number): Promise<WorkScheduleEntity[]>;
     getWorkScheduleByWsTTId(workScheduleId: string, companyId: number): Promise<WorkScheduleEntity | null>;
     getWorkScheduleByTTIds(ids: string[], companyId: number): Promise<WorkScheduleEntity[]>;
     mapIdsToUUIDs(ids: number[]): Promise<string[]>;
@@ -135,7 +135,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         updatedOn: Date;
         startDate: string;
         endDate: string;
-        publishHistories: import("./interfaces/work-schedule-publish-history.interface").IWorkSchedulePublishHistory[];
+        publishHistories: IWorkSchedulePublishHistory[];
         publishType: EWorkSchedulePublishType;
     } & WorkScheduleEntity>;
     sendWorkScheduleNotification(params: {
@@ -146,6 +146,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         dateTo: string;
         workScheduleId: number;
         verb: string;
+        workScheduleName: string;
     }): Promise<void>;
     getAssigneesIsNotAssignedToWorkSchedule(companyId: number): Promise<EmployeeEntity[]>;
     getAssigneesWasAssignedToWorkSchedule(companyId: number, workSchedule: Partial<Pick<WorkScheduleEntity, 'assignees' | 'groupAssignees'>>): Promise<IWorkScheduleAssignee>;
@@ -292,6 +293,9 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         query: GetAllWorkScheduleInMultipleDateQueryDto;
     }): Promise<PaginationResponseDto<{
         date: string;
+        workScheduleEntity: WorkScheduleEntity[];
+    }> | PaginationResponseDto<{
+        date: string;
         workScheduleEntity: {
             id: number;
             name: string;
@@ -306,9 +310,6 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
             groupAssignees: any;
             groupAssigneesCount: number;
         }[];
-    }> | PaginationResponseDto<{
-        date: string;
-        workScheduleEntity: WorkScheduleEntity[];
     }>>;
     checkInDefaultWorkSchedule(companyId: number, checkInDefaultWorkScheduleDto: CheckInDefaultWorkScheduleDto): Promise<{
         employees: {
@@ -330,6 +331,13 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         companyId: number;
         workScheduleId: number;
     }): Promise<{
+        id: number;
+        name: string;
+        color: string;
+        startDate: Date;
+        endDate: Date;
+        isDeleted: boolean;
+        state: EWorkScheduleState;
         assignees: {
             [k: string]: unknown;
         };
@@ -338,39 +346,9 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
             [k: string]: unknown;
         };
         groupAssigneesCount: number;
-        ttWorkScheduleId: string;
-        name: string;
-        utcOffset: number;
-        workArrangement: import("../../common").WorkArrangement;
-        breakType: import("../../common").BreakType;
-        default: boolean;
-        weeklyHours: number;
-        unitTime: UnitTime;
-        excludeEarlyClockIn: boolean;
-        companyId: number;
-        overtimeId: number;
-        endWorkDayAt: string;
-        publishType: EWorkSchedulePublishType;
-        color: string;
-        startDate: Date;
-        endDate: Date;
-        state: EWorkScheduleState;
-        threshold: number;
-        publishHistories: import("./interfaces/work-schedule-publish-history.interface").IWorkSchedulePublishHistory[];
-        autoDeductions: AutoDeductionEntity[];
-        breaks: BreakRuleEntity[];
-        locationWorkSchedules: import("../../../../core/database").LocationWorkScheduleEntity[];
         daySchedules: DayScheduleEntity[];
-        workScheduleAssignment: import("../../../../core/database/entities/work-schedule-assignment.entity").WorkScheduleAssignmentEntity[];
-        employees: EmployeeEntity[];
-        workScheduleTags: import("../../../../core/database").WorkScheduleTagEntity[];
-        organizationStructures: import("../../../../core/database").OrganizationStructureEntity[];
-        id: number;
-        isDeleted: boolean;
-        createdBy: string;
-        createdOn: Date;
-        updatedBy?: string;
-        updatedOn?: Date;
+        publisher: string | null;
+        publishedTime: string | null;
     } | null>;
     private countAndGetFirstFiveObjects;
     private getScheduleForDate;
@@ -393,11 +371,34 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
         state: EWorkScheduleState;
         groupId: number | undefined;
         groupName: string | undefined;
+        startDate: Date;
+        endDate: Date;
+        default: boolean;
     } | null)[]>;
     getWorkScheduleQueryBuilder(args: GetWorkScheduleArguments, options?: GetWorkScheduleOptions): import("typeorm").SelectQueryBuilder<WorkScheduleEntity>;
-    getAllGroupWorkScheduleOfEmployee(employeeId: number, companyId: number): Promise<WorkScheduleEntity[]>;
+    getAllPublishedGroupWorkScheduleOfEmployee(employeeId: number, companyId: number): Promise<WorkScheduleEntity[]>;
     getOldestLatestWorkSchedule(workSchedules: WorkScheduleEntity[], type: 'oldest' | 'latest'): null;
     getMainWorkScheduleInDate(date: string, workSchedules: WorkScheduleEntity[]): WorkScheduleEntity | null;
+    getGroupWorkScheduleOfEmployeeOnGivenWorkSchedules(employee: EmployeeEntity, workSchedules: WorkScheduleEntity[], rootGroupId?: number): WorkScheduleEntity[];
+    getAllWorkScheduleOfManyEmployeesInDateRange(params: {
+        employeeIds: number[];
+        companyId: number;
+        listDates: string[];
+        groupByEmployee?: boolean;
+    }): Promise<{
+        [date: string]: WorkScheduleEntity[];
+    }>;
+    getWorkScheduleOfManyEmployeesInDateRange(params: {
+        employeeIds: number[];
+        companyId: number;
+        startDate: string;
+        endDate?: string;
+        groupByEmployee?: boolean;
+    }): Promise<{
+        [date: string]: {
+            [employeeId: string]: WorkScheduleEntity;
+        };
+    }>;
     getWorkScheduleOfEmployeeInDateRange(params: {
         employeeId: number;
         companyId: number;
@@ -407,4 +408,7 @@ export declare class WorkScheduleService extends TypeOrmBaseService<WorkSchedule
     getAllWorkSchedulePublishedForWsAssignment(companyId: number): Promise<Array<WorkScheduleEntity & {
         listOrganizationPaths: string[];
     }>>;
+    checkIsExistedWsDefaultAtFirstTime(args: {
+        companyId: number;
+    }): Promise<boolean>;
 }

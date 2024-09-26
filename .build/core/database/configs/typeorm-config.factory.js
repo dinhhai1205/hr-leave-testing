@@ -35,7 +35,7 @@ let TypeOrmConfigFactory = class TypeOrmConfigFactory {
             password,
             database: dbName,
             keepConnectionAlive: true,
-            migrationsRun: false,
+            migrationsRun: true,
             synchronize: false,
             namingStrategy: new typeorm_naming_strategies_1.SnakeNamingStrategy(),
             autoLoadEntities: true,

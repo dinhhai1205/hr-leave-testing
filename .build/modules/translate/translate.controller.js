@@ -18,14 +18,19 @@ const swagger_1 = require("@nestjs/swagger");
 const constants_1 = require("../../common/constants");
 const decorators_1 = require("../../common/decorators");
 const iam_1 = require("../../core/iam");
+const file_data_obj_body_dto_1 = require("./dto/file-data-obj-body.dto");
 const get_translated_file_dto_1 = require("./dto/get-translated-file.dto");
 const translate_service_1 = require("./translate.service");
 let TranslateController = class TranslateController {
     constructor(translateService) {
         this.translateService = translateService;
     }
-    async getTranslatedFile(file, query) {
-        return this.translateService.getTranslatedFile(file, query);
+    async getTranslatedFile(file, query, body) {
+        return this.translateService.getTranslatedFile({
+            file,
+            fileDataObj: body?.fileDataObj,
+            langCode: query,
+        });
     }
     async getTranslatedText(text, query) {
         return this.translateService.translateText(text, query);
@@ -48,11 +53,14 @@ __decorate([
                 callback(null, true);
             },
         },
+        additionBodyDto: file_data_obj_body_dto_1.TranslateFileBodyDto,
     }),
     __param(0, (0, common_1.UploadedFile)()),
     __param(1, (0, common_1.Query)()),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, get_translated_file_dto_1.GetTranslatedFileDto]),
+    __metadata("design:paramtypes", [Object, get_translated_file_dto_1.GetTranslatedFileDto,
+        file_data_obj_body_dto_1.TranslateFileBodyDto]),
     __metadata("design:returntype", Promise)
 ], TranslateController.prototype, "getTranslatedFile", null);
 __decorate([

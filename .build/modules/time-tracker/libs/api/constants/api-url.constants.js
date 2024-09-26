@@ -174,6 +174,10 @@ exports.TIME_TRACKER_URL = {
         method: 'GET',
         url: '/:companyId/activity/groups',
     },
+    GET_ALL_ACTIVITY_OF_EMPLOYEES: {
+        method: 'GET',
+        url: '/:companyId/activity/employees',
+    },
     GET_ALL_ACTIVITY_GROUP_ASSIGNEE: {
         method: 'GET',
         url: ':companyId/activity/:activityId/group-assignees',
@@ -181,6 +185,14 @@ exports.TIME_TRACKER_URL = {
     GET_ALL_ACTIVITY_ESS: {
         method: 'GET',
         url: ':companyId/activity-group/:employeeId/activity-ess',
+    },
+    UPDATE_ACTIVITY_ADD_NEW_EMPLOYEES: {
+        method: 'PATCH',
+        url: ':companyId/activity/:activityId/assignees/add',
+    },
+    UPDATE_ACTIVITY_REMOVE_EMPLOYEE: {
+        method: 'PATCH',
+        url: ':companyId/activity/:activityId/assignees/remove',
     },
     CREATE_GROUP: {
         method: 'POST',

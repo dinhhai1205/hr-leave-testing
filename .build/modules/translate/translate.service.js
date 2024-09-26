@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TranslateService = void 0;
 const client_translate_1 = require("@aws-sdk/client-translate");
 const common_1 = require("@nestjs/common");
-const stream_1 = require("stream");
 const constants_1 = require("../../common/constants");
 const utils_1 = require("../../common/utils");
 const aws_1 = require("../../libs/aws");
@@ -21,18 +20,31 @@ let TranslateService = class TranslateService {
         this.awsTranslateService = awsTranslateService;
         this.translateClient = this.awsTranslateService.translateClient;
     }
-    async getTranslatedFile(file, { sourceLanguageCode, targetLanguageCode }) {
-        const fileObj = (0, utils_1.safeJsonParse)({
-            text: file.buffer.toString(),
-            defaultValueReturn: {},
-        });
+    async getTranslatedFile(params) {
+        const { langCode, file, fileDataObj } = params;
+        if (!file && !fileDataObj)
+            return {};
+        const { sourceLanguageCode, targetLanguageCode } = langCode;
+        const fileObj = fileDataObj
+            ? fileDataObj
+            : (0, utils_1.safeJsonParse)({
+                text: file.buffer.toString(),
+                defaultValueReturn: {},
+            });
         const listKeys = [];
         const listContents = [];
         for (const [key, content] of Object.entries(fileObj)) {
-            if (content) {
-                listKeys.push(key);
-                listContents.push(content.trim());
+            if (!key || !content)
+                continue;
+            if (typeof key !== 'string') {
+                throw new common_1.BadRequestException(`The key ${key} must be a string`);
             }
+            let contentToTranslate = content;
+            if (typeof content !== 'string') {
+                contentToTranslate = contentToTranslate.toString();
+            }
+            listKeys.push(key);
+            listContents.push(contentToTranslate.trim());
         }
         if (!listContents.length) {
             throw new common_1.BadRequestException('File content is empty');
@@ -41,24 +53,16 @@ let TranslateService = class TranslateService {
         const translatedText = await this.translateFile({ buffer: Buffer.from(data), mimetype: constants_1.CONTENT_TYPE.TXT }, { sourceLanguageCode, targetLanguageCode });
         const listContentTranslated = translatedText.split('\n');
         const contentTranslatedLength = listContentTranslated.length;
-        let jsonContent = `{\n`;
+        const translatedResult = {};
         for (let index = 0; index < contentTranslatedLength; index++) {
-            const element = listContentTranslated[index]
+            const content = listContentTranslated[index]
                 ? listContentTranslated[index]
                 : listContents[index];
-            jsonContent +=
-                index + 1 === contentTranslatedLength
-                    ? `"${listKeys[index]}":"${element}"\n`
-                    : `"${listKeys[index]}":"${element}",\n`;
+            const key = listKeys[index];
+            if (content && key)
+                translatedResult[key] = content;
         }
-        jsonContent += `}`;
-        const readableStream = new stream_1.Readable();
-        readableStream.push(jsonContent);
-        readableStream.push(null);
-        return new common_1.StreamableFile(readableStream, {
-            disposition: `attachment; filename="${targetLanguageCode}.json"`,
-            type: constants_1.CONTENT_TYPE.JSON,
-        });
+        return translatedResult;
     }
     async translateFile(file, { sourceLanguageCode, targetLanguageCode }) {
         const command = new client_translate_1.TranslateDocumentCommand({

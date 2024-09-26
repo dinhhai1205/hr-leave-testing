@@ -249,8 +249,8 @@ let TimeEntryService = class TimeEntryService {
         const employeeInfo = await this.timeTrackerEmployeeService.getEmployeeRefAndEmailUsingEIds(empIds);
         const employeeRecord = employeeInfo.reduce((acc, employee) => {
             acc[employee.id] = {
-                email: employee.email,
-                employeeRef: employee.employeeRef,
+                email: employee?.email,
+                employeeRef: employee?.employeeRef,
             };
             return acc;
         }, {});
@@ -264,8 +264,8 @@ let TimeEntryService = class TimeEntryService {
                     employeeInfo: {
                         ...item?.employeeInfo,
                         id: employeeId,
-                        email: employeeRecord[employeeId].email,
-                        employeeRef: employeeRecord[employeeId].employeeRef,
+                        email: employeeRecord[employeeId]?.email,
+                        employeeRef: employeeRecord[employeeId]?.employeeRef,
                     },
                 };
                 return overview;

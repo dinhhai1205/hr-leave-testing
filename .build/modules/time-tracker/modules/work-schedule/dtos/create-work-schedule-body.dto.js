@@ -173,4 +173,10 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateWorkScheduleBodyDTO.prototype, "publishType", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    __metadata("design:type", Array)
+], CreateWorkScheduleBodyDTO.prototype, "publishHistories", void 0);
 //# sourceMappingURL=create-work-schedule-body.dto.js.map

@@ -240,6 +240,9 @@ export declare class TimeTrackerEmployeeController {
         state: import("../work-schedule/enums/work-schedule-state.enum").EWorkScheduleState;
         groupId: number | undefined;
         groupName: string | undefined;
+        startDate: Date;
+        endDate: Date;
+        default: boolean;
     } | null)[]>;
     isEmployeeInTimeTracker({ companyId }: BaseParamDto, { timeTrackerEmployeeId }: TimeTrackerMapping, activeUser: IActiveUserData): Promise<{
         isTimeTrackerEmployee: boolean;

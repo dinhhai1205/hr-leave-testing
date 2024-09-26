@@ -25,6 +25,8 @@ const enums_1 = require("../../../../common/enums");
 const time_tracker_emp_guard_1 = require("../../common/guards/time-tracker-emp.guard");
 const common_2 = require("../../common");
 const dtos_2 = require("../project/dtos");
+const dto_1 = require("../../../../common/dto");
+const remove_assignees_dto_1 = require("./dtos/remove-assignees.dto");
 let ActivityController = class ActivityController {
     constructor(activityService) {
         this.activityService = activityService;
@@ -51,6 +53,22 @@ let ActivityController = class ActivityController {
     }
     archivedActivity(companyId, body, { timeTrackerCompanyId }) {
         return this.activityService.archivedActivities(body, {
+            companyId: timeTrackerCompanyId,
+        });
+    }
+    async addNewAssignee({ companyId }, activityId, addNewAssigneeDto, { timeTrackerCompanyId }) {
+        return this.activityService.addNewAssigneeToActivity(companyId, {
+            payload: addNewAssigneeDto,
+            activityId,
+        }, {
+            companyId: timeTrackerCompanyId,
+        });
+    }
+    async removeMultipleAssignees({ companyId }, activityId, removeAssigneesDto, { timeTrackerCompanyId }) {
+        return this.activityService.removeMultipleEmployeesOfActivity(companyId, {
+            payload: removeAssigneesDto,
+            activityId,
+        }, {
             companyId: timeTrackerCompanyId,
         });
     }
@@ -137,6 +155,36 @@ __decorate([
     __metadata("design:paramtypes", [Number, dtos_1.ArchivedActivity, Object]),
     __metadata("design:returntype", void 0)
 ], ActivityController.prototype, "archivedActivity", null);
+__decorate([
+    (0, common_1.Patch)(':activityId/assignees/add'),
+    (0, iam_1.Auth)(iam_1.AuthType.Bearer, iam_1.AuthType.Permission),
+    (0, iam_1.Permissions)(enums_1.EApiAppMode.ADMIN, enums_1.EPermissionActions.EDIT),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Add new employee assignees to an activity',
+    }),
+    __param(0, (0, common_1.Param)()),
+    __param(1, (0, common_1.Param)('activityId', common_1.ParseUUIDPipe)),
+    __param(2, (0, common_1.Body)()),
+    __param(3, (0, time_tracker_emp_info_decorator_1.TimeTrackerEmpInfo)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [dto_1.BaseParamDto, String, dtos_1.AddNewActivityAssigneeDto, Object]),
+    __metadata("design:returntype", Promise)
+], ActivityController.prototype, "addNewAssignee", null);
+__decorate([
+    (0, common_1.Patch)(':activityId/assignees/remove'),
+    (0, iam_1.Auth)(iam_1.AuthType.Bearer, iam_1.AuthType.Permission),
+    (0, iam_1.Permissions)(enums_1.EApiAppMode.ADMIN, enums_1.EPermissionActions.EDIT),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Remove multiple employee assignees from an activity',
+    }),
+    __param(0, (0, common_1.Param)()),
+    __param(1, (0, common_1.Param)('activityId', common_1.ParseUUIDPipe)),
+    __param(2, (0, common_1.Body)()),
+    __param(3, (0, time_tracker_emp_info_decorator_1.TimeTrackerEmpInfo)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [dto_1.BaseParamDto, String, remove_assignees_dto_1.RemoveActivityAssigneesDto, Object]),
+    __metadata("design:returntype", Promise)
+], ActivityController.prototype, "removeMultipleAssignees", null);
 __decorate([
     (0, common_1.Patch)(':activityId'),
     (0, iam_1.Auth)(iam_1.AuthType.Bearer, iam_1.AuthType.Permission),

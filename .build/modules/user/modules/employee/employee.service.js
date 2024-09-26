@@ -45,10 +45,11 @@ let EmployeeService = class EmployeeService extends services_1.LegacyBaseService
             active: true,
             isDeleted: false,
         };
-        this.getEmployeeByIds = async (employeeIds) => {
+        this.getEmployeeByIds = async (employeeIds, options) => {
             return this.employeeRepository.find({
-                where: { id: (0, typeorm_2.In)(employeeIds) },
+                where: { id: (0, typeorm_2.In)(employeeIds), isDeleted: false },
                 relations: ['workSchedule'],
+                ...options,
             });
         };
         this.getEmployeeByIdsWithoutRelations = async (employeeIds) => {
@@ -56,6 +57,13 @@ let EmployeeService = class EmployeeService extends services_1.LegacyBaseService
                 where: { id: (0, typeorm_2.In)(employeeIds) },
             });
         };
+    }
+    async getAllEmployee(companyId, options) {
+        return this.employeeRepository.find({
+            where: { isDeleted: false, companyId },
+            relations: ['workSchedule'],
+            ...options,
+        });
     }
     async getAllEmployeeForPolicyCredit(filterEmployee = {}, { batchSize, skip } = {}, leaveTypeId) {
         const employeeAlias = (0, utils_1.aliasEntity)(employee_entity_1.EmployeeEntity);
@@ -698,6 +706,7 @@ let EmployeeService = class EmployeeService extends services_1.LegacyBaseService
             select: {
                 employeeRef: true,
                 fullNameLocal: true,
+                email: true,
                 fullNameEn: true,
                 id: true,
             },

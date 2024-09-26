@@ -4,7 +4,7 @@ exports.WorkScheduleAssignmentHrforteNotificationMapper = void 0;
 const enums_1 = require("../../../../../common/enums");
 class WorkScheduleAssignmentHrforteNotificationMapper {
     static toParams(params) {
-        const { actorEmail, clientUrl, workScheduleId, employees, dateFrom, dateTo, verb } = params;
+        const { actorEmail, clientUrl, workScheduleId, employees, dateFrom, dateTo, verb, workScheduleName, } = params;
         const moduleId = enums_1.EMainModuleNumber['WORK_SCHEDULE'];
         const commonHrfNotificationParams = {
             moduleId,
@@ -18,7 +18,7 @@ class WorkScheduleAssignmentHrforteNotificationMapper {
             const remainHrfNotificationParams = {
                 dateFrom,
                 dateTo,
-                recordNumber: `0`,
+                recordNumber: workScheduleName,
                 recordUrl,
                 recordKey: workScheduleId,
                 audienceEmail: employee.email,

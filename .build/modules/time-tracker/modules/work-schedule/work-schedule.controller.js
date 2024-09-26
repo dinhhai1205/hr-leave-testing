@@ -33,6 +33,11 @@ let WorkScheduleController = class WorkScheduleController {
     getTTWorkScheduleDefault({ companyId }, { timeTrackerCompanyId }) {
         return this.workScheduleService.getTTWorkScheduleDefaultByWorkScheduleId(timeTrackerCompanyId);
     }
+    checkIsExistedWs({ companyId }) {
+        return this.workScheduleService.checkIsExistedWsDefaultAtFirstTime({
+            companyId,
+        });
+    }
     getLeaveWorkScheduleDefault({ companyId }) {
         return this.workScheduleService.getWorkScheduleDefaultByCompanyId(companyId);
     }
@@ -141,6 +146,19 @@ __decorate([
     __metadata("design:paramtypes", [dto_1.BaseParamDto, Object]),
     __metadata("design:returntype", void 0)
 ], WorkScheduleController.prototype, "getTTWorkScheduleDefault", null);
+__decorate([
+    (0, common_1.Get)('/check-is-existed-ws-default'),
+    (0, common_1.UseGuards)(time_tracker_emp_guard_1.TimeTrackerEmployeeInfoGuard),
+    (0, iam_1.Auth)(iam_1.AuthType.Bearer, iam_1.AuthType.Permission),
+    (0, iam_1.Permissions)(enums_1.EApiAppMode.ADMIN, enums_1.EPermissionActions.VIEW),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Check is existed work schedule default',
+    }),
+    __param(0, (0, common_1.Param)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [dto_1.BaseParamDto]),
+    __metadata("design:returntype", void 0)
+], WorkScheduleController.prototype, "checkIsExistedWs", null);
 __decorate([
     (0, common_1.Get)('/default'),
     (0, iam_1.Auth)(iam_1.AuthType.Bearer, iam_1.AuthType.Permission),

@@ -521,6 +521,7 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
                     dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
                     userEmail,
                     verb: `has just assigned you to a published work schedule ${name}. Check it out now!`,
+                    workScheduleName: workSchedule.name,
                 });
             }
         }
@@ -594,6 +595,7 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
                     dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
                     userEmail,
                     verb: `has just assigned you to a published work schedule ${name}. Check it out now!`,
+                    workScheduleName: workSchedule.name,
                 });
             }
         }
@@ -648,6 +650,7 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
                         dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
                         userEmail,
                         verb: `has just unassigned you to a published work schedule "${workSchedule.name}". Check it out now!`,
+                        workScheduleName: workSchedule.name,
                     });
                 }
             });
@@ -738,6 +741,7 @@ let TimeTrackerEmployeeService = class TimeTrackerEmployeeService {
                         dateTo: endDate instanceof Date ? endDate.toISOString() : endDate,
                         userEmail,
                         verb: `has just unassigned you to a published work schedule "${workSchedule.name}". Check it out now!`,
+                        workScheduleName: workSchedule.name,
                     });
                 }
             });
